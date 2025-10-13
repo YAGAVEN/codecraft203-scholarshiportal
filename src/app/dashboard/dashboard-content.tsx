@@ -174,7 +174,7 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
       </div>
 
       {/* Readiness Recommendations */}
-      {readinessScore && readinessScore.recommendations.length > 0 && (
+      {readinessScore && readinessScore.recommendations && readinessScore.recommendations.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
