@@ -52,7 +52,7 @@ export class ApplicationService {
     const input: CreateApplicationInput = {
       user_id: userId,
       scholarship_id: scholarshipId,
-      status: 'applied',
+      status: 'pending',
     };
 
     const application = await this.applicationRepo.create(input);
@@ -101,7 +101,7 @@ export class ApplicationService {
    */
   async updateApplicationStatus(
     applicationId: string,
-    status: 'applied' | 'pending' | 'accepted' | 'rejected'
+    status: 'pending' | 'shortlisted' | 'selected' | 'rejected'
   ): Promise<ApplicationResponseDTO> {
     const application = await this.applicationRepo.update(applicationId, { status });
 

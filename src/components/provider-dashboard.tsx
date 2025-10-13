@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ interface ProviderDashboardProps {
 }
 
 export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
+  const router = useRouter();
   const [scholarships] = useState<Scholarship[]>([]);
   const [applications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,7 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
             Manage your scholarships and review applications
           </p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => router.push('/provider/scholarships/create')}>
           <Plus className="h-4 w-4" />
           Create Scholarship
         </Button>
@@ -152,7 +154,11 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
           <CardDescription>Common tasks for scholarship management</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button variant="outline" className="h-auto flex-col items-start p-4 space-y-2">
+          <Button 
+            variant="outline" 
+            className="h-auto flex-col items-start p-4 space-y-2"
+            onClick={() => router.push('/provider/scholarships/create')}
+          >
             <Plus className="h-5 w-5 text-primary" />
             <div className="text-left">
               <div className="font-semibold">Create New Scholarship</div>
@@ -161,7 +167,11 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
               </div>
             </div>
           </Button>
-          <Button variant="outline" className="h-auto flex-col items-start p-4 space-y-2">
+          <Button 
+            variant="outline" 
+            className="h-auto flex-col items-start p-4 space-y-2"
+            onClick={() => router.push('/provider/applications')}
+          >
             <Users className="h-5 w-5 text-primary" />
             <div className="text-left">
               <div className="font-semibold">Review Applications</div>
@@ -170,7 +180,11 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
               </div>
             </div>
           </Button>
-          <Button variant="outline" className="h-auto flex-col items-start p-4 space-y-2">
+          <Button 
+            variant="outline" 
+            className="h-auto flex-col items-start p-4 space-y-2"
+            onClick={() => router.push('/provider/scholarships')}
+          >
             <FileText className="h-5 w-5 text-primary" />
             <div className="text-left">
               <div className="font-semibold">Manage Scholarships</div>
@@ -186,7 +200,11 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold">My Scholarships</h2>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => router.push('/provider/scholarships')}
+          >
             View All
           </Button>
         </div>
@@ -199,7 +217,7 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
               <p className="text-muted-foreground mb-4">
                 Create your first scholarship to start receiving applications
               </p>
-              <Button>
+              <Button onClick={() => router.push('/provider/scholarships/create')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Scholarship
               </Button>

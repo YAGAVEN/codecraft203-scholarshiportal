@@ -88,9 +88,8 @@ export class ApplicationRepository extends BaseRepository {
         .insert({
           user_id: input.user_id,
           scholarship_id: input.scholarship_id,
-          status: input.status || 'applied',
+          status: input.status || 'pending',
           applied_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
         })
         .select()
         .single();
