@@ -80,3 +80,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Voiceflow Chatbot Styling Override */
+@layer components {
+  /* Force light background for chatbot input and messages */
+  div[class*="vfrc"] input,
+  div[class*="vfrc"] textarea,
+  div[class*="voiceflow"] input,
+  div[class*="voiceflow"] textarea {
+    background-color: white !important;
+    color: #000 !important;
+  }
+  
+  /* Chatbot container light mode */
+  div[id*="voiceflow"] {
+    color-scheme: light;
+  }
+}
