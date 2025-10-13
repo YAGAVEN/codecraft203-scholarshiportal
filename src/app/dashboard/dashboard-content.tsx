@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Scholarship } from '@/types/database.types';
 import { formatDistanceToNow } from 'date-fns';
+import ReadinessDonut from '@/components/ReadinessDonut';
 import { User, Notification } from '@/types/database.types';
 
 interface ReadinessScore {
@@ -29,6 +31,7 @@ interface DashboardContentProps {
 }
 
 export default function DashboardContent({ profile }: DashboardContentProps) {
+  const router = useRouter();
   const [matchedScholarships, setMatchedScholarships] = useState<Scholarship[]>([]);
   const [readinessScore, setReadinessScore] = useState<ReadinessScore | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -129,12 +132,17 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${getScoreColor(readinessScore?.score || 0)}`}>
-              {readinessScore?.score || 0}%
+            <div className="flex items-center gap-4">
+              <div className="relative w-24 h-24">
+                <ReadinessDonut value={readinessScore?.score || 0} size={96} stroke={12} />
+              </div>
+              <div>
+                <p className={`text-lg font-semibold ${getScoreColor(readinessScore?.score || 0)}`}>
+                  {readinessScore?.status || 'Loading...'}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">Overall readiness</p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {readinessScore?.status || 'Loading...'}
-            </p>
           </CardContent>
         </Card>
 
@@ -154,27 +162,11 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
           </CardContent>
         </Card>
 
-        {/* Notifications */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Notifications
-            </CardTitle>
-            <Bell className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {notifications.filter((n) => !n.is_read).length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Unread notifications
-            </p>
-          </CardContent>
-        </Card>
+        {/* Notifications moved to navbar icon */}
       </div>
 
-      {/* Readiness Recommendations */}
-      {readinessScore && readinessScore.recommendations && readinessScore.recommendations.length > 0 && (
+      {/* Action Items: two-column view */}
+      {readinessScore && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -182,18 +174,53 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
               Action Items
             </CardTitle>
             <CardDescription>
-              Complete these tasks to improve your readiness score
+              Tasks and missing documents to improve your readiness score
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2">
-              {readinessScore.recommendations.map((rec: string, idx: number) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <span className="text-primary mt-1">•</span>
-                  <span>{rec}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left: Provided info / factors */}
+              <div>
+                <h3 className="text-sm font-medium mb-2">Provided Information</h3>
+                <div className="space-y-3">
+                  {readinessScore.factors.map((f, i) => {
+                    const pct = Math.round((f.score / f.maxScore) * 100);
+                    return (
+                      <div key={i}>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">{f.name}</div>
+                          <div className="text-xs text-muted-foreground">{pct}%</div>
+                        </div>
+                        <div className="w-full bg-muted rounded h-2 mt-1 overflow-hidden">
+                          <div className="h-2 bg-primary" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right: Missing docs / recommendations */}
+              <div>
+                <h3 className="text-sm font-medium mb-2">Missing Documents & Details</h3>
+                <div className="space-y-3">
+                  {readinessScore.recommendations.length === 0 && (
+                    <div className="text-sm text-muted-foreground">All required documents provided.</div>
+                  )}
+                  {readinessScore.recommendations.map((rec: string, idx: number) => (
+                    <div key={idx} className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="text-sm">{rec}</div>
+                        <div className="text-xs text-muted-foreground">Explain what this helps (optional)</div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <Button size="sm" onClick={() => router.push('/profile')}>Add</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

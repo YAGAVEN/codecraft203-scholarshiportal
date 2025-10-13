@@ -24,6 +24,8 @@ import {
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import type { User as UserType } from '@/types/database.types';
+import { Bell, Check } from 'lucide-react';
+import { useRef } from 'react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -32,6 +34,10 @@ export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [userProfile, setUserProfile] = useState<UserType | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotif, setShowNotif] = useState(false);
+  const notifRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -49,7 +55,48 @@ export default function Navbar() {
     };
     
     fetchUserProfile();
+    // fetch notifications
+    fetchNotifications();
   }, [supabase]);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('/api/notifications');
+      if (!res.ok) return;
+      const data = await res.json();
+      setNotifications(data.notifications || []);
+      setUnreadCount((data.notifications || []).filter((n: any) => !n.is_read).length || 0);
+    } catch (e) {
+      console.error('Failed to fetch notifications', e);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      const res = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notification_id: id }),
+      });
+      if (res.ok) {
+        setNotifications((ns) => ns.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+        setUnreadCount((c) => Math.max(0, c - 1));
+      }
+    } catch (e) {
+      console.error('Failed to mark as read', e);
+    }
+  };
+
+  // close dropdown on outside click
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setShowNotif(false);
+      }
+    };
+    document.addEventListener('click', onDoc);
+    return () => document.removeEventListener('click', onDoc);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -142,6 +189,66 @@ export default function Navbar() {
               </div>
             )}
             
+            {/* Notifications */}
+            <div className="relative" ref={notifRef}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setShowNotif((s) => !s);
+                  if (!showNotif) fetchNotifications();
+                }}
+                title="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                {/* small unread dot when there are unread notifications */}
+                {unreadCount > 0 && (
+                  <span aria-hidden className="absolute -top-1 -right-1 inline-block w-2 h-2 rounded-full bg-red-600" />
+                )}
+              </Button>
+
+              {showNotif && (
+                <div className="absolute right-0 mt-2 w-80 bg-card border rounded shadow-lg z-50">
+                  <div className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <strong>Notifications</strong>
+                      <button className="text-sm text-muted-foreground" onClick={() => { setNotifications([]); setUnreadCount(0); setShowNotif(false); }}>Close</button>
+                    </div>
+                    <div className="max-h-64 overflow-auto space-y-2">
+                      {notifications.length === 0 && (
+                        <div className="text-sm text-muted-foreground">No notifications</div>
+                      )}
+                      {notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className={`p-2 rounded flex items-start justify-between gap-2 ${n.is_read ? 'bg-muted/50' : 'bg-primary/10'}`}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-start gap-2">
+                              {/* unread dot per item */}
+                              {!n.is_read && <span className="inline-block w-2 h-2 mt-1 rounded-full bg-blue-600" />}
+                              <div className="text-sm">{n.message}</div>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                          </div>
+                          {/* show compact check button only for unread items */}
+                          {!n.is_read && (
+                            <button
+                              aria-label="Mark as read"
+                              className="p-1 rounded hover:bg-muted/70"
+                              onClick={() => markAsRead(n.id)}
+                            >
+                              <Check className="h-4 w-4 text-blue-600" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Theme Toggle */}
             {mounted && (
               <Button
