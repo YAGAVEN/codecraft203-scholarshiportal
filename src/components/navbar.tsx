@@ -18,7 +18,8 @@ import {
   Users,
   Shield,
   Building2,
-  UserCircle
+  UserCircle,
+  BarChart3
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
@@ -70,7 +71,8 @@ export default function Navbar() {
     if (userProfile?.role === 'admin') {
       return [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/scholarships', label: 'All Scholarships', icon: FileText },
+        { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+        { href: '/admin/users', label: 'Users', icon: Users },
         { href: '/profile', label: 'Profile', icon: User },
       ];
     }

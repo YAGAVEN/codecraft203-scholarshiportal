@@ -21,43 +21,105 @@ interface AdminDashboardProps {
   profile: User;
 }
 
+interface ScholarshipWithProvider extends Scholarship {
+  provider: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
 export default function AdminDashboard({ profile }: AdminDashboardProps) {
-  const [pendingScholarships] = useState<Scholarship[]>([]);
-  const [users] = useState<User[]>([]);
+  const [pendingScholarships, setPendingScholarships] = useState<ScholarshipWithProvider[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats] = useState({
+  const [stats, setStats] = useState({
     totalUsers: 0,
     totalStudents: 0,
     totalProviders: 0,
     totalScholarships: 0,
     pendingApproval: 0,
+    activeScholarships: 0,
     totalApplications: 0,
   });
 
   const fetchAdminData = useCallback(async () => {
     try {
-      // TODO: Implement API endpoints for admin data
-      // For now, using mock data
-      console.log('Admin profile:', profile);
+      console.log('Fetching admin data for profile:', profile.id);
+      
+      // Fetch stats, scholarships, and users in parallel
+      const [statsRes, scholarshipsRes, usersRes] = await Promise.all([
+        fetch('/api/admin/stats'),
+        fetch('/api/admin/scholarships'),
+        fetch('/api/admin/users'),
+      ]);
+
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats(statsData);
+      }
+
+      if (scholarshipsRes.ok) {
+        const scholarshipsData = await scholarshipsRes.json();
+        setPendingScholarships(scholarshipsData);
+      }
+
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUsers(usersData);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error('Error fetching admin data:', error);
       setLoading(false);
     }
-  }, [profile]);
+  }, [profile.id]);
 
   useEffect(() => {
     fetchAdminData();
   }, [fetchAdminData]);
 
   const handleApproveScholarship = async (scholarshipId: string) => {
-    // TODO: Implement approval logic
-    console.log('Approve scholarship:', scholarshipId);
+    try {
+      const response = await fetch(`/api/admin/scholarships/${scholarshipId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'approve' }),
+      });
+
+      if (response.ok) {
+        // Refresh data
+        await fetchAdminData();
+      } else {
+        console.error('Failed to approve scholarship');
+      }
+    } catch (error) {
+      console.error('Error approving scholarship:', error);
+    }
   };
 
   const handleRejectScholarship = async (scholarshipId: string) => {
-    // TODO: Implement rejection logic
-    console.log('Reject scholarship:', scholarshipId);
+    try {
+      const response = await fetch(`/api/admin/scholarships/${scholarshipId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'reject' }),
+      });
+
+      if (response.ok) {
+        // Refresh data
+        await fetchAdminData();
+      } else {
+        console.error('Failed to reject scholarship');
+      }
+    } catch (error) {
+      console.error('Error rejecting scholarship:', error);
+    }
   };
 
   if (loading) {
@@ -154,7 +216,7 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {stats.totalScholarships - stats.pendingApproval}
+              {stats.activeScholarships}
             </div>
             <p className="text-xs text-muted-foreground">
               Approved and live
@@ -207,7 +269,7 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
                         <Badge variant="secondary">Pending Review</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mb-2">
-                        Provider: {scholarship.provider_id}
+                        Provider: {scholarship.provider?.name || 'Unknown'} ({scholarship.provider?.email || ''})
                       </p>
                       <p className="text-sm mb-3">{scholarship.description}</p>
                       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -264,7 +326,11 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
               <CardTitle>Recent Users</CardTitle>
               <CardDescription>Latest registrations on the platform</CardDescription>
             </div>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.location.href = '/admin/users'}
+            >
               Manage Users
             </Button>
           </div>
@@ -304,7 +370,10 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => window.location.href = '/admin/analytics'}
+        >
           <CardContent className="p-6">
             <div className="flex flex-col items-center text-center space-y-2">
               <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
@@ -318,7 +387,10 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => window.location.href = '/admin/users'}
+        >
           <CardContent className="p-6">
             <div className="flex flex-col items-center text-center space-y-2">
               <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
@@ -340,7 +412,7 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
               </div>
               <h3 className="font-semibold">Send Notification</h3>
               <p className="text-sm text-muted-foreground">
-                Broadcast message to all users
+                Broadcast message to all users (Coming Soon)
               </p>
             </div>
           </CardContent>
