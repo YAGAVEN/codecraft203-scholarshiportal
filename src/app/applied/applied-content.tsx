@@ -5,12 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, ExternalLink, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { Application } from '@/types/database.types';
-import { mockScholarships } from '@/data/scholarships';
+import { Application, Scholarship } from '@/types/database.types';
 import { formatDistanceToNow } from 'date-fns';
+import { createClient } from '@/lib/supabase/client';
+
+interface ApplicationWithScholarship extends Application {
+  scholarship?: Scholarship;
+}
 
 export default function AppliedContent() {
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [applications, setApplications] = useState<ApplicationWithScholarship[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,13 +23,23 @@ export default function AppliedContent() {
 
   const fetchApplications = async () => {
     try {
+      const supabase = createClient();
+      
+      // Fetch applications
       const res = await fetch('/api/apply');
       const data = await res.json();
+      
+      // Fetch all scholarships from database
+      const { data: scholarships, error } = await supabase
+        .from('scholarships')
+        .select('*');
+      
+      if (error) throw error;
       
       // Merge with scholarship data
       const applicationsWithScholarships = (data.applications || []).map((app: Application) => ({
         ...app,
-        scholarship: mockScholarships.find(s => s.id === app.scholarship_id),
+        scholarship: scholarships?.find((s: Scholarship) => s.id === app.scholarship_id),
       }));
       
       setApplications(applicationsWithScholarships);

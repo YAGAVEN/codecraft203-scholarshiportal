@@ -6,23 +6,53 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, ExternalLink, Search } from 'lucide-react';
-import { mockScholarships } from '@/data/scholarships';
 import { Scholarship } from '@/types/database.types';
 import { formatDistanceToNow } from 'date-fns';
+import { createClient } from '@/lib/supabase/client';
 
 export default function ScholarshipsContent() {
-  const [scholarships, setScholarships] = useState<Scholarship[]>(mockScholarships);
+  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
+  const [allScholarships, setAllScholarships] = useState<Scholarship[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCountry, setFilterCountry] = useState('all');
   const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [countries, setCountries] = useState<string[]>(['all']);
 
-  const countries = ['all', ...Array.from(new Set(mockScholarships.map(s => s.country)))];
-
+  // Fetch scholarships from database
   useEffect(() => {
-    let filtered = mockScholarships;
+    const fetchScholarships = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('scholarships')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        setAllScholarships(data || []);
+        setScholarships(data || []);
+        
+        // Extract unique countries
+        const uniqueCountries = Array.from(new Set((data || []).map((s: Scholarship) => s.country)));
+        setCountries(['all', ...uniqueCountries]);
+      } catch (error) {
+        console.error('Error fetching scholarships:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchScholarships();
+  }, []);
+
+  // Filter scholarships based on search and country filter
+  useEffect(() => {
+    let filtered = allScholarships;
 
     if (searchTerm) {
-      filtered = filtered.filter(s =>
+      filtered = filtered.filter((s: Scholarship) =>
         s.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.country.toLowerCase().includes(searchTerm.toLowerCase())
@@ -30,11 +60,11 @@ export default function ScholarshipsContent() {
     }
 
     if (filterCountry !== 'all') {
-      filtered = filtered.filter(s => s.country === filterCountry);
+      filtered = filtered.filter((s: Scholarship) => s.country === filterCountry);
     }
 
     setScholarships(filtered);
-  }, [searchTerm, filterCountry]);
+  }, [searchTerm, filterCountry, allScholarships]);
 
   const handleApply = async (scholarshipId: string) => {
     setApplyingId(scholarshipId);
@@ -87,7 +117,7 @@ export default function ScholarshipsContent() {
               onChange={(e) => setFilterCountry(e.target.value)}
               className="flex h-10 w-full md:w-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              {countries.map(country => (
+              {countries.map((country: string) => (
                 <option key={country} value={country}>
                   {country === 'all' ? 'All Countries' : country}
                 </option>
@@ -100,12 +130,18 @@ export default function ScholarshipsContent() {
       {/* Results */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {scholarships.length} scholarship{scholarships.length !== 1 ? 's' : ''}
+          {loading ? 'Loading...' : `Showing ${scholarships.length} scholarship${scholarships.length !== 1 ? 's' : ''}`}
         </p>
       </div>
 
       {/* Scholarships Grid */}
-      {scholarships.length === 0 ? (
+      {loading ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">Loading scholarships...</p>
+          </CardContent>
+        </Card>
+      ) : scholarships.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">

@@ -1,166 +1,329 @@
-# 🚀 Scholarship Track Portal - Complete Setup Guide
+# Setup Guide# 🚀 Scholarship Track Portal - Complete Setup Guide
 
-## Table of Contents
+
+
+This comprehensive guide will help you set up the Scholarship Portal application with its clean layered architecture.## Table of Contents
+
 1. [Initial Setup](#initial-setup)
-2. [Supabase Configuration](#supabase-configuration)
-3. [Google OAuth Setup](#google-oauth-setup)
-4. [Running the Application](#running-the-application)
-5. [Testing](#testing)
-6. [Deployment](#deployment)
-7. [Troubleshooting](#troubleshooting)
 
----
+## Architecture Overview2. [Supabase Configuration](#supabase-configuration)
+
+3. [Google OAuth Setup](#google-oauth-setup)
+
+The application follows **Clean Architecture** principles with these layers:4. [Running the Application](#running-the-application)
+
+5. [Testing](#testing)
+
+- **Controllers** (API Routes): Handle HTTP requests6. [Deployment](#deployment)
+
+- **Services**: Business logic and orchestration7. [Troubleshooting](#troubleshooting)
+
+- **Repositories**: Data access layer
+
+- **Models**: Domain entities---
+
+- **DTOs**: Data transfer objects
 
 ## Initial Setup
 
+## Prerequisites
+
 ### 1. Prerequisites Check
 
-Verify you have the following installed:
+- Node.js 18+ installed
 
-```bash
-node --version  # Should be v18 or higher
+- npm or yarn package managerVerify you have the following installed:
+
+- A Supabase account
+
+- Git```bash
+
+- Code editor (VS Code recommended)node --version  # Should be v18 or higher
+
 npm --version   # Should be v9 or higher
-git --version   # Any recent version
+
+## Installation Stepsgit --version   # Any recent version
+
 ```
+
+### 1. Clone the Repository
 
 ### 2. Project Installation
 
 ```bash
-# Clone the repository
-git clone <your-repo-url>
+
+git clone <repository-url>```bash
+
+cd internshiportal# Clone the repository
+
+```git clone <your-repo-url>
+
 cd internshiportal
 
+### 2. Install Dependencies
+
 # Install dependencies
+
+```bashnpm install
+
 npm install
 
-# Verify installation
+```# Verify installation
+
 npm list --depth=0
+
+### 3. Environment Setup```
+
+
+
+Create a `.env.local` file in the root directory:---
+
+
+
+```bash## Supabase Configuration
+
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key### Step 1: Create Supabase Project
+
 ```
-
----
-
-## Supabase Configuration
-
-### Step 1: Create Supabase Project
 
 1. Go to https://app.supabase.com
-2. Click "New Project"
-3. Fill in:
-   - **Name**: scholarship-track-portal
-   - **Database Password**: (Generate strong password and save it)
+
+Get these values from:2. Click "New Project"
+
+- [Supabase Dashboard](https://app.supabase.com)3. Fill in:
+
+- Project Settings > API   - **Name**: scholarship-track-portal
+
+- Copy URL and anon/public key   - **Database Password**: (Generate strong password and save it)
+
    - **Region**: Choose closest to your users
-4. Click "Create new project"
+
+### 4. Database Setup4. Click "Create new project"
+
 5. Wait 2-3 minutes for setup to complete
 
-### Step 2: Get API Credentials
+1. Open Supabase project dashboard
 
-1. In your Supabase project, go to **Settings** (⚙️ icon) > **API**
+2. Navigate to SQL Editor### Step 2: Get API Credentials
+
+3. Copy contents of `supabase-schema.sql`
+
+4. Execute the SQL script1. In your Supabase project, go to **Settings** (⚙️ icon) > **API**
+
 2. Copy the following:
-   - **Project URL** (under Project URL)
-   - **anon public** key (under Project API keys)
 
-### Step 3: Configure Environment Variables
+This creates:   - **Project URL** (under Project URL)
 
-Create `.env.local` file in project root:
+- Database tables (users, scholarships, applications, notifications)   - **anon public** key (under Project API keys)
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+- Indexes for performance
+
+- Row Level Security (RLS) policies### Step 3: Configure Environment Variables
+
+
+
+### 5. Configure AuthenticationCreate `.env.local` file in project root:
+
+
+
+#### Email Authentication (Default)```bash
+
+Email auth is enabled by default in Supabase.NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-```
 
-**Important**: Replace the placeholder values with your actual credentials!
+#### Google OAuth (Optional)```
 
-### Step 4: Set Up Database Schema
+1. Supabase Dashboard > Authentication > Providers
 
-1. In Supabase Dashboard, go to **SQL Editor** (</> icon)
+2. Enable Google provider**Important**: Replace the placeholder values with your actual credentials!
+
+3. Get OAuth credentials from Google Console
+
+4. Add callback URL: `http://localhost:3000/auth/callback`### Step 4: Set Up Database Schema
+
+
+
+### 6. Run the Development Server1. In Supabase Dashboard, go to **SQL Editor** (</> icon)
+
 2. Click "New Query"
-3. Copy the entire content from `supabase-schema.sql`
-4. Paste into the SQL editor
-5. Click "Run" or press `Ctrl/Cmd + Enter`
+
+```bash3. Copy the entire content from `supabase-schema.sql`
+
+npm run dev4. Paste into the SQL editor
+
+```5. Click "Run" or press `Ctrl/Cmd + Enter`
+
 6. Verify success (you should see "Success. No rows returned")
+
+Open [http://localhost:3000](http://localhost:3000)
 
 ### Step 5: Verify Tables Created
 
+## Project Structure
+
 1. Go to **Table Editor** (📊 icon)
-2. You should see these tables:
-   - users
-   - scholarships
-   - applications
-   - notifications
 
-### Step 6: Enable Email Auth
+```2. You should see these tables:
 
-1. Go to **Authentication** > **Providers**
-2. Email provider should be enabled by default
-3. Under **Email** settings:
-   - ✅ Enable email confirmations (optional for production)
-   - ✅ Enable email change confirmations (optional)
+src/   - users
 
----
+├── app/                    # Next.js App Router   - scholarships
 
-## Google OAuth Setup
+│   ├── api/               # Controllers (API Routes)   - applications
 
-### Step 1: Create Google Cloud Project
+│   │   ├── apply/        # Application controller   - notifications
 
-1. Go to https://console.cloud.google.com
-2. Click "Select a project" → "New Project"
-3. Enter project name: "Scholarship Track Portal"
-4. Click "Create"
+│   │   ├── match/        # Scholarship matching controller
 
-### Step 2: Configure OAuth Consent Screen
+│   │   ├── notifications/# Notification controller### Step 6: Enable Email Auth
 
-1. In Google Cloud Console, go to **APIs & Services** > **OAuth consent screen**
-2. Select **External** (unless you have Google Workspace)
-3. Click "Create"
-4. Fill in:
-   - **App name**: Scholarship Track Portal
-   - **User support email**: Your email
-   - **Developer contact**: Your email
-5. Click "Save and Continue"
-6. Skip "Scopes" → Click "Save and Continue"
-7. Add test users (optional for development)
-8. Click "Save and Continue"
+│   │   └── readiness/    # Readiness score controller
 
-### Step 3: Create OAuth Credentials
+│   └── [pages]/          # UI pages1. Go to **Authentication** > **Providers**
 
-1. Go to **APIs & Services** > **Credentials**
+│2. Email provider should be enabled by default
+
+├── services/              # Business Logic Layer3. Under **Email** settings:
+
+│   ├── application.service.ts   - ✅ Enable email confirmations (optional for production)
+
+│   ├── scholarship.service.ts   - ✅ Enable email change confirmations (optional)
+
+│   ├── notification.service.ts
+
+│   └── readiness.service.ts---
+
+│
+
+├── repositories/          # Data Access Layer## Google OAuth Setup
+
+│   ├── base.repository.ts
+
+│   ├── application.repository.ts### Step 1: Create Google Cloud Project
+
+│   ├── scholarship.repository.ts
+
+│   ├── notification.repository.ts1. Go to https://console.cloud.google.com
+
+│   └── user.repository.ts2. Click "Select a project" → "New Project"
+
+│3. Enter project name: "Scholarship Track Portal"
+
+├── models/                # Domain Models4. Click "Create"
+
+│   ├── User.model.ts
+
+│   ├── Scholarship.model.ts### Step 2: Configure OAuth Consent Screen
+
+│   ├── Application.model.ts
+
+│   └── Notification.model.ts1. In Google Cloud Console, go to **APIs & Services** > **OAuth consent screen**
+
+│2. Select **External** (unless you have Google Workspace)
+
+├── dtos/                  # Data Transfer Objects3. Click "Create"
+
+│   ├── application.dto.ts4. Fill in:
+
+│   ├── scholarship.dto.ts   - **App name**: Scholarship Track Portal
+
+│   ├── notification.dto.ts   - **User support email**: Your email
+
+│   └── readiness.dto.ts   - **Developer contact**: Your email
+
+│5. Click "Save and Continue"
+
+└── components/            # UI Components6. Skip "Scopes" → Click "Save and Continue"
+
+    └── ui/               # Reusable UI components7. Add test users (optional for development)
+
+```8. Click "Save and Continue"
+
+
+
+## Development Guidelines### Step 3: Create OAuth Credentials
+
+
+
+### Adding New Features1. Go to **APIs & Services** > **Credentials**
+
 2. Click "+ CREATE CREDENTIALS" > "OAuth client ID"
-3. Application type: **Web application**
+
+Follow this order:3. Application type: **Web application**
+
 4. Name: "Scholarship Track Portal Web Client"
-5. Add **Authorized JavaScript origins**:
+
+1. **Define Model** (`src/models/`)5. Add **Authorized JavaScript origins**:
+
+2. **Create DTO** (`src/dtos/`)   ```
+
+3. **Add Repository** (`src/repositories/`)   http://localhost:3000
+
+4. **Implement Service** (`src/services/`)   ```
+
+5. **Create Controller** (`src/app/api/`)6. Add **Authorized redirect URIs**:
+
    ```
-   http://localhost:3000
-   ```
-6. Add **Authorized redirect URIs**:
-   ```
-   http://localhost:3000/auth/callback
+
+### Code Standards   http://localhost:3000/auth/callback
+
    https://your-project.supabase.co/auth/v1/callback
-   ```
-7. Click "Create"
-8. Copy **Client ID** and **Client Secret** (you'll need these)
 
-### Step 4: Configure Google OAuth in Supabase
+- **TypeScript**: Use strict mode   ```
 
-1. Go to your Supabase project
+- **Naming**: Descriptive, consistent names7. Click "Create"
+
+- **Documentation**: Comment complex logic8. Copy **Client ID** and **Client Secret** (you'll need these)
+
+- **Error Handling**: Use try-catch blocks
+
+- **Validation**: Validate inputs in controllers### Step 4: Configure Google OAuth in Supabase
+
+
+
+## Common Issues1. Go to your Supabase project
+
 2. Navigate to **Authentication** > **Providers**
-3. Find **Google** and click to expand
-4. Toggle "Enable Google" to ON
-5. Paste:
-   - **Client ID** (from Google Cloud Console)
+
+1. **Invalid API key**: Check `.env.local`3. Find **Google** and click to expand
+
+2. **Database errors**: Re-run SQL schema4. Toggle "Enable Google" to ON
+
+3. **Auth issues**: Verify callback URLs5. Paste:
+
+4. **TypeScript errors**: Run `npm run lint`   - **Client ID** (from Google Cloud Console)
+
    - **Client Secret** (from Google Cloud Console)
-6. Copy the **Callback URL** shown (should be `https://your-project.supabase.co/auth/v1/callback`)
+
+## Production Deployment6. Copy the **Callback URL** shown (should be `https://your-project.supabase.co/auth/v1/callback`)
+
 7. Go back to Google Cloud Console and ensure this URL is in your authorized redirect URIs
-8. Click "Save" in Supabase
 
----
+### Vercel (Recommended)8. Click "Save" in Supabase
 
-## Running the Application
 
-### Development Mode
 
-```bash
+1. Push to GitHub---
+
+2. Import to Vercel
+
+3. Add environment variables## Running the Application
+
+4. Deploy
+
+5. Update Supabase URLs### Development Mode
+
+
+
+---```bash
+
 npm run dev
-```
+
+Built with Clean Architecture principles 🚀```
+
 
 The application will be available at http://localhost:3000
 

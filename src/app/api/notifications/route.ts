@@ -1,6 +1,17 @@
+/**
+ * Notification Controller
+ * Handles HTTP requests for notifications
+ */
+
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { NotificationService } from '@/services';
+import { MarkNotificationReadDTO } from '@/dtos';
 
+/**
+ * GET /api/notifications
+ * Get all notifications for the authenticated user
+ */
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -11,20 +22,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: notifications, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    const notificationService = new NotificationService(supabase);
+    const result = await notificationService.getUserNotifications(user.id);
 
-    if (error) throw error;
-
-    const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
-
-    return NextResponse.json({
-      notifications: notifications || [],
-      unreadCount,
-    });
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching notifications:', error);
     return NextResponse.json(
@@ -34,6 +35,10 @@ export async function GET() {
   }
 }
 
+/**
+ * POST /api/notifications
+ * Mark a notification as read
+ */
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -44,17 +49,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { notification_id } = await request.json();
+    const body: MarkNotificationReadDTO = await request.json();
 
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', notification_id)
-      .eq('user_id', user.id);
+    if (!body.notification_id) {
+      return NextResponse.json(
+        { error: 'Notification ID is required' },
+        { status: 400 }
+      );
+    }
 
-    if (error) throw error;
+    const notificationService = new NotificationService(supabase);
+    const result = await notificationService.markAsRead(body.notification_id);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, notification: result });
   } catch (error) {
     console.error('Error marking notification as read:', error);
     return NextResponse.json(
