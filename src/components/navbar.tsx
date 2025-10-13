@@ -27,6 +27,15 @@ import type { User as UserType } from '@/types/database.types';
 import { Bell, Check } from 'lucide-react';
 import { useRef } from 'react';
 
+interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -34,7 +43,7 @@ export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [userProfile, setUserProfile] = useState<UserType | null>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement | null>(null);
@@ -65,7 +74,7 @@ export default function Navbar() {
       if (!res.ok) return;
       const data = await res.json();
       setNotifications(data.notifications || []);
-      setUnreadCount((data.notifications || []).filter((n: any) => !n.is_read).length || 0);
+      setUnreadCount((data.notifications || []).filter((n: Notification) => !n.is_read).length || 0);
     } catch (e) {
       console.error('Failed to fetch notifications', e);
     }
