@@ -1,7 +1,16 @@
+/**
+ * Scholarship Match Controller
+ * Handles HTTP requests for scholarship matching
+ */
+
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { mockScholarships } from '@/data/scholarships';
+import { ScholarshipService } from '@/services';
 
+/**
+ * GET /api/match
+ * Get matched scholarships for the authenticated user
+ */
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -12,35 +21,18 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    const scholarshipService = new ScholarshipService(supabase);
+    const result = await scholarshipService.getMatchedScholarships(user.id);
 
-    if (profileError) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
-
-    // Simple matching logic based on profile
-    // In a real app, this would be more sophisticated
-    const matchedScholarships = mockScholarships.filter(() => {
-      // Match based on economic background
-      const economicMatch = 
-        profile.economic_background === 'Below Poverty Line' ||
-        profile.economic_background === 'Low Income';
-      
-      // You can add more sophisticated matching logic here
-      return economicMatch || Math.random() > 0.3; // For demo, show most scholarships
-    });
-
-    return NextResponse.json({
-      scholarships: matchedScholarships,
-      count: matchedScholarships.length,
-    });
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error matching scholarships:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    
+    if (message.includes('not found')) {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
