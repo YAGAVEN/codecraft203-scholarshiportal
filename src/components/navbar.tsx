@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -12,10 +13,18 @@ import {
   LogOut,
   GraduationCap,
   Moon,
-  Sun
+  Sun,
+  FileText,
+  Users,
+  Shield,
+  Building2,
+  UserCircle,
+  BarChart3,
+  Settings
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import type { User as UserType } from '@/types/database.types';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -23,10 +32,25 @@ export default function Navbar() {
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserType | null>(null);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        setUserProfile(profile);
+      }
+    };
+    
+    fetchUserProfile();
+  }, [supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -34,12 +58,48 @@ export default function Navbar() {
     router.refresh();
   };
 
-  const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/scholarships', label: 'Scholarships', icon: BookOpen },
-    { href: '/applied', label: 'Applied', icon: CheckSquare },
-    { href: '/profile', label: 'Profile', icon: User },
-  ];
+  // Role-based navigation items
+  const getNavItems = () => {
+    if (userProfile?.role === 'provider') {
+      return [
+        { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/scholarships', label: 'My Scholarships', icon: FileText },
+        { href: '/applications', label: 'Applications', icon: Users },
+        { href: '/profile', label: 'Profile', icon: User },
+      ];
+    }
+
+    if (userProfile?.role === 'admin') {
+      return [
+        { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/scholarships', label: 'Scholarships', icon: FileText },
+        { href: '/users', label: 'Users', icon: Users },
+        { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+        { href: '/settings', label: 'Settings', icon: Settings },
+      ];
+    }
+
+    // Default student navigation
+    return [
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/scholarships', label: 'Scholarships', icon: BookOpen },
+      { href: '/applied', label: 'Applied', icon: CheckSquare },
+      { href: '/profile', label: 'Profile', icon: User },
+    ];
+  };
+
+  const getRoleBadge = () => {
+    const role = userProfile?.role || 'student';
+    const badges = {
+      student: { label: '🧑‍🎓 Student', variant: 'default' as const, icon: UserCircle, color: 'bg-blue-500' },
+      provider: { label: '🏫 Provider', variant: 'secondary' as const, icon: Building2, color: 'bg-green-500' },
+      admin: { label: '👨‍💼 Admin', variant: 'outline' as const, icon: Shield, color: 'bg-purple-500' },
+    };
+    return badges[role];
+  };
+
+  const navItems = getNavItems();
+  const roleBadge = getRoleBadge();
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -73,12 +133,24 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Role Badge */}
+            {userProfile && (
+              <div className="hidden md:flex items-center">
+                <Badge variant={roleBadge.variant} className="gap-1 px-3 py-1">
+                  <roleBadge.icon className="h-3 w-3" />
+                  {roleBadge.label}
+                </Badge>
+              </div>
+            )}
+            
+            {/* Theme Toggle */}
             {mounted && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                title="Toggle theme"
               >
                 {theme === 'dark' ? (
                   <Sun className="h-5 w-5" />
@@ -87,7 +159,9 @@ export default function Navbar() {
                 )}
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
+            
+            {/* Logout Button */}
+            <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
               <LogOut className="h-5 w-5" />
             </Button>
           </div>

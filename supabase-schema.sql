@@ -1,34 +1,44 @@
--- Create users table
+-- Create users table with role support
 CREATE TABLE IF NOT EXISTS users (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
-  course TEXT NOT NULL,
-  category TEXT NOT NULL,
-  economic_background TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'provider', 'admin')),
+  course TEXT,
+  category TEXT,
+  economic_background TEXT,
+  profile_completeness INTEGER DEFAULT 0,
+  documents_uploaded INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
--- Create scholarships table
+-- Create scholarships table with provider and approval support
 CREATE TABLE IF NOT EXISTS scholarships (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  provider_id UUID REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
   eligibility_criteria TEXT NOT NULL,
+  benefits TEXT,
+  required_documents TEXT,
   deadline DATE NOT NULL,
   country TEXT NOT NULL,
   language TEXT NOT NULL,
   link TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'withdrawn')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
--- Create applications table
+-- Create applications table with more statuses
 CREATE TABLE IF NOT EXISTS applications (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  scholarship_id TEXT NOT NULL,
-  status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected', 'applied')),
-  applied_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+  scholarship_id UUID REFERENCES scholarships(id) ON DELETE CASCADE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'shortlisted', 'selected', 'rejected')),
+  documents_submitted TEXT,
+  applied_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
 -- Create notifications table
@@ -80,6 +90,26 @@ CREATE POLICY "Users can view their own notifications" ON notifications
 CREATE POLICY "Users can update their own notifications" ON notifications
   FOR UPDATE USING (auth.uid() = user_id);
 
--- Create policies for scholarships table (public read)
-CREATE POLICY "Anyone can view scholarships" ON scholarships
-  FOR SELECT USING (true);
+-- Create policies for scholarships table
+CREATE POLICY "Students can view approved scholarships" ON scholarships
+  FOR SELECT USING (status = 'approved' OR auth.uid() = provider_id);
+
+CREATE POLICY "Providers can create scholarships" ON scholarships
+  FOR INSERT WITH CHECK (auth.uid() = provider_id);
+
+CREATE POLICY "Providers can update their own scholarships" ON scholarships
+  FOR UPDATE USING (auth.uid() = provider_id);
+
+CREATE POLICY "Admins can view all scholarships" ON scholarships
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admins can update all scholarships" ON scholarships
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role = 'admin'
+    )
+  );
