@@ -24,28 +24,60 @@ interface ProviderDashboardProps {
 
 export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
   const router = useRouter();
-  const [scholarships] = useState<Scholarship[]>([]);
-  const [applications] = useState<Application[]>([]);
+  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats] = useState({
+  const [stats, setStats] = useState({
     totalScholarships: 0,
     pendingApproval: 0,
     activeScholarships: 0,
     totalApplications: 0,
     pendingReview: 0,
+    selectedApplications: 0,
   });
 
   const fetchProviderData = useCallback(async () => {
     try {
-      // TODO: Implement API endpoints for provider data
-      // For now, using mock data
-      console.log('Provider profile:', profile);
+      // Log provider info for debugging
+      console.log('Fetching data for provider:', profile.id, profile.name);
+      
+      // Fetch scholarships
+      const scholarshipsResponse = await fetch('/api/provider/scholarships');
+      if (!scholarshipsResponse.ok) throw new Error('Failed to fetch scholarships');
+      const scholarshipsData = await scholarshipsResponse.json();
+      const fetchedScholarships = scholarshipsData.scholarships || [];
+      setScholarships(fetchedScholarships);
+
+      // Fetch applications
+      const applicationsResponse = await fetch('/api/provider/applications');
+      if (!applicationsResponse.ok) throw new Error('Failed to fetch applications');
+      const applicationsData = await applicationsResponse.json();
+      const fetchedApplications = applicationsData.applications || [];
+      setApplications(fetchedApplications);
+
+      // Calculate stats
+      const totalScholarships = fetchedScholarships.length;
+      const pendingApproval = fetchedScholarships.filter((s: Scholarship) => s.status === 'pending').length;
+      const activeScholarships = fetchedScholarships.filter((s: Scholarship) => s.status === 'approved').length;
+      const totalApplications = fetchedApplications.length;
+      const pendingReview = fetchedApplications.filter((a: Application) => a.status === 'pending').length;
+      const selectedApplications = fetchedApplications.filter((a: Application) => a.status === 'selected').length;
+
+      setStats({
+        totalScholarships,
+        pendingApproval,
+        activeScholarships,
+        totalApplications,
+        pendingReview,
+        selectedApplications,
+      });
+
       setLoading(false);
     } catch (error) {
       console.error('Error fetching provider data:', error);
       setLoading(false);
     }
-  }, [profile]);
+  }, [profile.id, profile.name]);
 
   useEffect(() => {
     fetchProviderData();
@@ -139,9 +171,13 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">0%</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.totalApplications > 0 
+                ? Math.round((stats.selectedApplications / stats.totalApplications) * 100)
+                : 0}%
+            </div>
             <p className="text-xs text-muted-foreground">
-              Applications approved
+              {stats.selectedApplications} selected
             </p>
           </CardContent>
         </Card>

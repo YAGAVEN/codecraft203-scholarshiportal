@@ -19,14 +19,22 @@ import {
   Shield,
   Building2,
   UserCircle,
-  BarChart3,
-  Settings
+  BarChart3
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import type { User as UserType } from '@/types/database.types';
 import { Bell, Check } from 'lucide-react';
 import { useRef } from 'react';
+
+interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -35,7 +43,7 @@ export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [userProfile, setUserProfile] = useState<UserType | null>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement | null>(null);
@@ -66,7 +74,7 @@ export default function Navbar() {
       if (!res.ok) return;
       const data = await res.json();
       setNotifications(data.notifications || []);
-      setUnreadCount((data.notifications || []).filter((n: any) => !n.is_read).length || 0);
+      setUnreadCount((data.notifications || []).filter((n: Notification) => !n.is_read).length || 0);
     } catch (e) {
       console.error('Failed to fetch notifications', e);
     }
@@ -110,8 +118,8 @@ export default function Navbar() {
     if (userProfile?.role === 'provider') {
       return [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/scholarships', label: 'My Scholarships', icon: FileText },
-        { href: '/applications', label: 'Applications', icon: Users },
+        { href: '/provider/scholarships', label: 'My Scholarships', icon: FileText },
+        { href: '/provider/applications', label: 'Applications', icon: Users },
         { href: '/profile', label: 'Profile', icon: User },
       ];
     }
@@ -119,10 +127,9 @@ export default function Navbar() {
     if (userProfile?.role === 'admin') {
       return [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/scholarships', label: 'Scholarships', icon: FileText },
-        { href: '/users', label: 'Users', icon: Users },
-        { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-        { href: '/settings', label: 'Settings', icon: Settings },
+        { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+        { href: '/admin/users', label: 'Users', icon: Users },
+        { href: '/profile', label: 'Profile', icon: User },
       ];
     }
 

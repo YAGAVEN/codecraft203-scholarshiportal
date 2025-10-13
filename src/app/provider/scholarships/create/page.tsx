@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import Navbar from '@/components/navbar';
 import CreateScholarshipForm from './create-scholarship-form';
 
 export default async function CreateScholarshipPage() {
@@ -25,8 +26,11 @@ export default async function CreateScholarshipPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <CreateScholarshipForm providerId={user.id} />
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container mx-auto px-4 py-8">
+        <CreateScholarshipForm providerId={user.id} />
+      </div>
     </div>
   );
 }

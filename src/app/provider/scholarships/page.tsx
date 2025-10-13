@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import Navbar from '@/components/navbar';
 import ManageScholarshipsContent from './manage-scholarships-content';
 
 export default async function ManageScholarshipsPage() {
@@ -25,8 +26,11 @@ export default async function ManageScholarshipsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <ManageScholarshipsContent />
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container mx-auto px-4 py-8">
+        <ManageScholarshipsContent />
+      </div>
     </div>
   );
 }
