@@ -16,7 +16,7 @@ const DEMO_ACCOUNTS = {
     password: 'Student@123', // Update this with actual password
     icon: UserCircle,
     label: 'Student',
-    description: 'Discover and apply for scholarships',
+    description: 'Discover & apply for scholarships',
     color: 'bg-blue-500 hover:bg-blue-600',
   },
   provider: {
@@ -24,7 +24,7 @@ const DEMO_ACCOUNTS = {
     password: 'Provider@123', // Update this with actual password
     icon: Building2,
     label: 'Provider',
-    description: 'Manage scholarships and applicants',
+    description: 'Manage scholarships & applicants',
     color: 'bg-green-500 hover:bg-green-600',
   },
   admin: {
@@ -32,7 +32,7 @@ const DEMO_ACCOUNTS = {
     password: 'Admin@123', // Update this with actual password
     icon: Shield,
     label: 'Admin',
-    description: 'Oversee platform and moderate content',
+    description: 'Oversee platform & moderate',
     color: 'bg-purple-500 hover:bg-purple-600',
   },
 };
@@ -98,25 +98,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred');
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <Card className="w-full max-w-2xl">
@@ -144,34 +125,35 @@ export default function LoginPage() {
                   Hide
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mb-4">
+              <p className="text-xs text-muted-foreground mb-4 text-center">
                 Click below to explore different role features instantly
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {Object.entries(DEMO_ACCOUNTS).map(([role, account]) => {
                   const Icon = account.icon;
                   return (
-                    <div key={role} className="space-y-2">
+                    <div key={role} className="flex flex-col space-y-2 w-full">
+
                       <Button
                         variant="outline"
-                        className={`h-auto flex-col items-start p-4 space-y-2 hover:shadow-md transition-all w-full ${loading ? 'opacity-50' : ''}`}
+                        className={`h-auto flex flex-col items-center justify-center p-4 space-y-3 hover:shadow-md transition-all w-full min-h-[160px] overflow-hidden ${loading ? 'opacity-50' : ''}`}
                         onClick={() => handleDemoLogin(role as 'student' | 'provider' | 'admin')}
                         disabled={loading}
                       >
-                        <div className="flex items-center gap-2 w-full">
-                          <div className={`p-2 rounded-lg ${account.color} text-white`}>
-                            <Icon className="h-4 w-4" />
+                        <div className="flex flex-col items-center gap-2 w-full">
+                          <div className={`p-3 rounded-lg ${account.color} text-white flex-shrink-0`}>
+                            <Icon className="h-5 w-5" />
                           </div>
-                          <span className="font-semibold">{account.label}</span>
+                          <span className="font-semibold text-center text-sm whitespace-nowrap">{account.label}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground text-left">
+                        <p className="text-xs text-muted-foreground text-center leading-relaxed break-words w-full max-w-full overflow-hidden">
                           {account.description}
                         </p>
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full text-xs"
+                        className="w-full text-xs hover:bg-muted"
                         onClick={() => quickFillForm(role as 'student' | 'provider' | 'admin')}
                         disabled={loading}
                       >
