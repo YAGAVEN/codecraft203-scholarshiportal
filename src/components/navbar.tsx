@@ -18,9 +18,7 @@ import {
   Users,
   Shield,
   Building2,
-  UserCircle,
-  BarChart3,
-  Settings
+  UserCircle
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
@@ -63,8 +61,8 @@ export default function Navbar() {
     if (userProfile?.role === 'provider') {
       return [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/scholarships', label: 'My Scholarships', icon: FileText },
-        { href: '/applications', label: 'Applications', icon: Users },
+        { href: '/provider/scholarships', label: 'My Scholarships', icon: FileText },
+        { href: '/provider/applications', label: 'Applications', icon: Users },
         { href: '/profile', label: 'Profile', icon: User },
       ];
     }
@@ -72,10 +70,8 @@ export default function Navbar() {
     if (userProfile?.role === 'admin') {
       return [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/scholarships', label: 'Scholarships', icon: FileText },
-        { href: '/users', label: 'Users', icon: Users },
-        { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-        { href: '/settings', label: 'Settings', icon: Settings },
+        { href: '/scholarships', label: 'All Scholarships', icon: FileText },
+        { href: '/profile', label: 'Profile', icon: User },
       ];
     }
 

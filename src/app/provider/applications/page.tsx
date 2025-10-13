@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import Navbar from '@/components/navbar';
 import ReviewApplicationsContent from './review-applications-content';
 
 export default async function ReviewApplicationsPage() {
@@ -25,8 +26,11 @@ export default async function ReviewApplicationsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <ReviewApplicationsContent />
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container mx-auto px-4 py-8">
+        <ReviewApplicationsContent />
+      </div>
     </div>
   );
 }
