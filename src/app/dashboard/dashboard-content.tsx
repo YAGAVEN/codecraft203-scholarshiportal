@@ -7,16 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   TrendingUp, 
-  Bell, 
   Award, 
   Calendar,
   ExternalLink,
   AlertCircle
 } from 'lucide-react';
-import { Scholarship } from '@/types/database.types';
+import { Scholarship, User } from '@/types/database.types';
 import { formatDistanceToNow } from 'date-fns';
 import ReadinessDonut from '@/components/ReadinessDonut';
-import { User, Notification } from '@/types/database.types';
 
 interface ReadinessScore {
   score: number;
@@ -34,7 +32,6 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
   const router = useRouter();
   const [matchedScholarships, setMatchedScholarships] = useState<Scholarship[]>([]);
   const [readinessScore, setReadinessScore] = useState<ReadinessScore | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [applyingId, setApplyingId] = useState<string | null>(null);
 
@@ -44,19 +41,16 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
 
   const fetchDashboardData = async () => {
     try {
-      const [matchRes, readinessRes, notifRes] = await Promise.all([
+      const [matchRes, readinessRes] = await Promise.all([
         fetch('/api/match'),
         fetch('/api/readiness'),
-        fetch('/api/notifications'),
       ]);
 
       const matchData = await matchRes.json();
       const readinessData = await readinessRes.json();
-      const notifData = await notifRes.json();
 
       setMatchedScholarships(matchData.scholarships || []);
       setReadinessScore(readinessData);
-      setNotifications(notifData.notifications || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -117,82 +111,126 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
       <div>
         <h1 className="text-3xl font-bold">Welcome back, {profile?.name || 'Student'}!</h1>
         <p className="text-muted-foreground">
-          Here&apos;s your scholarship dashboard overview
+          Track your scholarship readiness and discover opportunities
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Readiness Score */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Readiness Score
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <div className="relative w-24 h-24">
-                <ReadinessDonut value={readinessScore?.score || 0} size={96} stroke={12} />
+      {/* HERO: Readiness Score - The Centerpiece */}
+      {readinessScore && (
+        <Card className="border-2 border-primary/20 shadow-lg">
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left: Readiness Donut - Large and Prominent */}
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="relative">
+                  <div className="relative w-48 h-48">
+                    <ReadinessDonut value={readinessScore.score} size={192} stroke={16} />
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold">Readiness Score</h2>
+                  <p className={`text-3xl font-bold mt-2 ${getScoreColor(readinessScore.score)}`}>
+                    {readinessScore.score}%
+                  </p>
+                  <p className="text-lg text-muted-foreground mt-1">
+                    {readinessScore.status}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">Overall readiness</p>
+                </div>
               </div>
-              <div>
-                <p className={`text-lg font-semibold ${getScoreColor(readinessScore?.score || 0)}`}>
-                  {readinessScore?.status || 'Loading...'}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">Overall readiness</p>
+
+              {/* Middle: Matched Scholarships Counter */}
+              <div className="flex flex-col items-center justify-center border-l border-r border-border px-8">
+                <Award className="h-16 w-16 text-primary mb-4" />
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold mb-2">Matched Scholarships</h3>
+                  <p className="text-6xl font-bold text-primary">{matchedScholarships.length}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Based on your profile
+                  </p>
+                  <Button 
+                    className="mt-4" 
+                    variant="outline"
+                    onClick={() => router.push('/scholarships')}
+                  >
+                    Browse All
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right: Quick Stats */}
+              <div className="flex flex-col justify-center space-y-4">
+                <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">Applications Submitted</p>
+                  <p className="text-2xl font-bold">{readinessScore.applicationCount}</p>
+                </div>
+                <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">Profile Completion</p>
+                  <p className="text-2xl font-bold">
+                    {readinessScore.factors.find(f => f.name.includes('Profile'))
+                      ? Math.round((readinessScore.factors.find(f => f.name.includes('Profile'))!.score / 
+                          readinessScore.factors.find(f => f.name.includes('Profile'))!.maxScore) * 100)
+                      : 0}%
+                  </p>
+                </div>
+                <Button 
+                  className="w-full" 
+                  onClick={() => router.push('/profile')}
+                >
+                  Complete Profile
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
+      )}
 
-        {/* Matched Scholarships */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Matched Scholarships
-            </CardTitle>
-            <Award className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{matchedScholarships.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Based on your profile
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Notifications moved to navbar icon */}
-      </div>
-
-      {/* Action Items: two-column view */}
+      {/* Action Items Section */}
       {readinessScore && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Action Items
-            </CardTitle>
-            <CardDescription>
-              Tasks and missing documents to improve your readiness score
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                  Action Items
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  Tasks and missing documents to improve your readiness score
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left: Provided info / factors */}
-              <div>
-                <h3 className="text-sm font-medium mb-2">Provided Information</h3>
-                <div className="space-y-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left: Provided Information */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <div className="h-2 w-2 rounded-full bg-green-600"></div>
+                  <h3 className="font-semibold text-base">Provided Information</h3>
+                </div>
+                <div className="space-y-4">
                   {readinessScore.factors.map((f, i) => {
                     const pct = Math.round((f.score / f.maxScore) * 100);
+                    const isComplete = pct === 100;
                     return (
-                      <div key={i}>
+                      <div key={i} className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <div className="text-sm font-medium">{f.name}</div>
-                          <div className="text-xs text-muted-foreground">{pct}%</div>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${isComplete ? 'bg-green-600' : 'bg-yellow-600'}`}></div>
+                            <span className="text-sm font-medium">{f.name}</span>
+                          </div>
+                          <span className={`text-sm font-semibold ${isComplete ? 'text-green-600' : 'text-yellow-600'}`}>
+                            {pct}%
+                          </span>
                         </div>
-                        <div className="w-full bg-muted rounded h-2 mt-1 overflow-hidden">
-                          <div className="h-2 bg-primary" style={{ width: `${pct}%` }} />
+                        <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                          <div 
+                            className={`h-2.5 rounded-full transition-all duration-500 ${
+                              isComplete ? 'bg-green-600' : 'bg-yellow-600'
+                            }`}
+                            style={{ width: `${pct}%` }}
+                          />
                         </div>
                       </div>
                     );
@@ -200,24 +238,49 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
                 </div>
               </div>
 
-              {/* Right: Missing docs / recommendations */}
-              <div>
-                <h3 className="text-sm font-medium mb-2">Missing Documents & Details</h3>
+              {/* Right: Missing Documents & Details */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <div className="h-2 w-2 rounded-full bg-red-600"></div>
+                  <h3 className="font-semibold text-base">Missing Documents & Details</h3>
+                </div>
                 <div className="space-y-3">
-                  {readinessScore.recommendations.length === 0 && (
-                    <div className="text-sm text-muted-foreground">All required documents provided.</div>
-                  )}
-                  {readinessScore.recommendations.map((rec: string, idx: number) => (
-                    <div key={idx} className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="text-sm">{rec}</div>
-                        <div className="text-xs text-muted-foreground">Explain what this helps (optional)</div>
+                  {readinessScore.recommendations.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 mb-4">
+                        <TrendingUp className="h-8 w-8 text-green-600" />
                       </div>
-                      <div className="flex-shrink-0">
-                        <Button size="sm" onClick={() => router.push('/profile')}>Add</Button>
-                      </div>
+                      <p className="text-sm font-medium">All Set!</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        All required documents provided.
+                      </p>
                     </div>
-                  ))}
+                  ) : (
+                    readinessScore.recommendations.map((rec: string, idx: number) => (
+                      <div 
+                        key={idx} 
+                        className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg"
+                      >
+                        <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-red-900 dark:text-red-100">
+                            {rec}
+                          </p>
+                          <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                            Complete this to increase your scholarship match rate
+                          </p>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          className="flex-shrink-0"
+                          onClick={() => router.push('/profile')}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -225,35 +288,47 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
         </Card>
       )}
 
-      {/* Matched Scholarships */}
+      {/* Matched Scholarships Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold">Matched Scholarships</h2>
-          <Button variant="outline" size="sm" asChild>
-            <a href="/scholarships">View All</a>
+          <div>
+            <h2 className="text-2xl font-bold">Your Matched Scholarships</h2>
+            <p className="text-sm text-muted-foreground">
+              Opportunities that fit your profile and goals
+            </p>
+          </div>
+          <Button variant="default" size="sm" onClick={() => router.push('/scholarships')}>
+            View All {matchedScholarships.length > 6 ? `(${matchedScholarships.length})` : ''}
           </Button>
         </div>
 
         {matchedScholarships.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center">
-              <p className="text-muted-foreground">
-                No scholarships matched yet. Complete your profile to get better matches.
+          <Card className="border-dashed">
+            <CardContent className="py-12 text-center">
+              <Award className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Matches Yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Complete your profile to get personalized scholarship recommendations
               </p>
+              <Button onClick={() => router.push('/profile')}>
+                Complete Your Profile
+              </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {matchedScholarships.slice(0, 6).map((scholarship) => (
-              <Card key={scholarship.id} className="flex flex-col">
+              <Card key={scholarship.id} className="flex flex-col hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-lg line-clamp-2">
                       {scholarship.title}
                     </CardTitle>
-                    <Badge variant="secondary">{scholarship.country}</Badge>
+                    <Badge variant="secondary" className="flex-shrink-0">
+                      {scholarship.country}
+                    </Badge>
                   </div>
-                  <CardDescription className="line-clamp-2">
+                  <CardDescription className="line-clamp-3">
                     {scholarship.description}
                   </CardDescription>
                 </CardHeader>
@@ -274,7 +349,7 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
                     onClick={() => handleApply(scholarship.id)}
                     disabled={applyingId === scholarship.id}
                   >
-                    {applyingId === scholarship.id ? 'Applying...' : 'Apply'}
+                    {applyingId === scholarship.id ? 'Applying...' : 'Apply Now'}
                   </Button>
                   <Button
                     variant="outline"
@@ -291,36 +366,6 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
           </div>
         )}
       </div>
-
-      {/* Recent Notifications */}
-      {notifications.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Notifications</CardTitle>
-            <CardDescription>Stay updated with your applications</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {notifications.slice(0, 5).map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`flex items-start gap-3 p-3 rounded-lg ${
-                    notification.is_read ? 'bg-muted/50' : 'bg-primary/10'
-                  }`}
-                >
-                  <Bell className="h-4 w-4 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm">{notification.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

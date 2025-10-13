@@ -198,65 +198,169 @@ export default function Navbar() {
               </div>
             )}
             
-            {/* Notifications */}
-            <div className="relative" ref={notifRef}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setShowNotif((s) => !s);
-                  if (!showNotif) fetchNotifications();
-                }}
-                title="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-                {/* small unread dot when there are unread notifications */}
-                {unreadCount > 0 && (
-                  <span aria-hidden className="absolute -top-1 -right-1 inline-block w-2 h-2 rounded-full bg-red-600" />
-                )}
-              </Button>
+            {/* Notifications - Only for Students and Providers */}
+            {userProfile && userProfile.role !== 'admin' && (
+              <div className="relative" ref={notifRef}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setShowNotif((s) => !s);
+                    if (!showNotif) fetchNotifications();
+                  }}
+                  title="Notifications"
+                  className="relative"
+                >
+                  <Bell className={`h-5 w-5 transition-all ${showNotif ? 'text-primary' : ''}`} />
+                  {/* Badge for unread count */}
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Button>
 
-              {showNotif && (
-                <div className="absolute right-0 mt-2 w-80 bg-card border rounded shadow-lg z-50">
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <strong>Notifications</strong>
-                      <button className="text-sm text-muted-foreground" onClick={() => { setNotifications([]); setUnreadCount(0); setShowNotif(false); }}>Close</button>
-                    </div>
-                    <div className="max-h-64 overflow-auto space-y-2">
-                      {notifications.length === 0 && (
-                        <div className="text-sm text-muted-foreground">No notifications</div>
-                      )}
-                      {notifications.map((n) => (
-                        <div
-                          key={n.id}
-                          className={`p-2 rounded flex items-start justify-between gap-2 ${n.is_read ? 'bg-muted/50' : 'bg-primary/10'}`}
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-start gap-2">
-                              {/* unread dot per item */}
-                              {!n.is_read && <span className="inline-block w-2 h-2 mt-1 rounded-full bg-blue-600" />}
-                              <div className="text-sm">{n.message}</div>
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString()}</div>
-                          </div>
-                          {/* show compact check button only for unread items */}
-                          {!n.is_read && (
-                            <button
-                              aria-label="Mark as read"
-                              className="p-1 rounded hover:bg-muted/70"
-                              onClick={() => markAsRead(n.id)}
-                            >
-                              <Check className="h-4 w-4 text-blue-600" />
-                            </button>
+                {showNotif && (
+                  <div className="absolute right-0 mt-2 w-96 bg-card border rounded-lg shadow-xl z-50 animate-in slide-in-from-top-2 duration-200">
+                    {/* Header */}
+                    <div className="px-4 py-3 border-b bg-muted/50 rounded-t-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Bell className="h-4 w-4 text-primary" />
+                          <span className="font-semibold text-base">
+                            {userProfile.role === 'provider' ? 'Application Updates' : 'Notifications'}
+                          </span>
+                          {unreadCount > 0 && (
+                            <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+                              {unreadCount} new
+                            </Badge>
                           )}
                         </div>
-                      ))}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => setShowNotif(false)}
+                        >
+                          Close
+                        </Button>
+                      </div>
                     </div>
+
+                    {/* Notifications List */}
+                    <div className="max-h-[400px] overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 px-4">
+                          <div className="rounded-full bg-muted p-4 mb-3">
+                            <Bell className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                          <p className="text-sm font-medium text-muted-foreground">
+                            {userProfile.role === 'provider' 
+                              ? 'No application updates yet'
+                              : 'No notifications yet'
+                            }
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {userProfile.role === 'provider'
+                              ? 'You&apos;ll be notified when students apply to your scholarships'
+                              : 'We&apos;ll notify you when something arrives'
+                            }
+                          </p>
+                        </div>
+                      ) : (
+                      <div className="divide-y">
+                        {notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className={`px-4 py-3 transition-colors hover:bg-muted/50 ${
+                              !n.is_read ? 'bg-primary/5' : ''
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              {/* Icon/Status indicator */}
+                              <div className={`mt-0.5 flex-shrink-0 rounded-full p-2 ${
+                                !n.is_read ? 'bg-primary/10' : 'bg-muted'
+                              }`}>
+                                <Bell className={`h-4 w-4 ${
+                                  !n.is_read ? 'text-primary' : 'text-muted-foreground'
+                                }`} />
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1">
+                                    <p className={`text-sm ${
+                                      !n.is_read ? 'font-medium' : 'text-muted-foreground'
+                                    }`}>
+                                      {n.title || 'Notification'}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
+                                      {n.message}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                                      <span>
+                                        {(() => {
+                                          const date = new Date(n.created_at);
+                                          const now = new Date();
+                                          const diffMs = now.getTime() - date.getTime();
+                                          const diffMins = Math.floor(diffMs / 60000);
+                                          const diffHours = Math.floor(diffMins / 60);
+                                          const diffDays = Math.floor(diffHours / 24);
+                                          
+                                          if (diffMins < 1) return 'Just now';
+                                          if (diffMins < 60) return `${diffMins}m ago`;
+                                          if (diffHours < 24) return `${diffHours}h ago`;
+                                          if (diffDays < 7) return `${diffDays}d ago`;
+                                          return date.toLocaleDateString();
+                                        })()}
+                                      </span>
+                                    </p>
+                                  </div>
+
+                                  {/* Mark as read button */}
+                                  {!n.is_read && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 flex-shrink-0"
+                                      onClick={() => markAsRead(n.id)}
+                                      title="Mark as read"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Footer - Mark all as read */}
+                  {notifications.length > 0 && unreadCount > 0 && (
+                    <div className="px-4 py-2 border-t bg-muted/30">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-center text-xs"
+                        onClick={() => {
+                          notifications.forEach((n) => {
+                            if (!n.is_read) markAsRead(n.id);
+                          });
+                        }}
+                      >
+                        <Check className="h-3 w-3 mr-1" />
+                        Mark all as read
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
+              </div>
+            )}
 
             {/* Theme Toggle */}
             {mounted && (
