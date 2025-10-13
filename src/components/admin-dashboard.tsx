@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,10 +22,10 @@ interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ profile }: AdminDashboardProps) {
-  const [pendingScholarships, setPendingScholarships] = useState<Scholarship[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [pendingScholarships] = useState<Scholarship[]>([]);
+  const [users] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     totalUsers: 0,
     totalStudents: 0,
     totalProviders: 0,
@@ -34,20 +34,21 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
     totalApplications: 0,
   });
 
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
-
-  const fetchAdminData = async () => {
+  const fetchAdminData = useCallback(async () => {
     try {
       // TODO: Implement API endpoints for admin data
       // For now, using mock data
+      console.log('Admin profile:', profile);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching admin data:', error);
       setLoading(false);
     }
-  };
+  }, [profile]);
+
+  useEffect(() => {
+    fetchAdminData();
+  }, [fetchAdminData]);
 
   const handleApproveScholarship = async (scholarshipId: string) => {
     // TODO: Implement approval logic

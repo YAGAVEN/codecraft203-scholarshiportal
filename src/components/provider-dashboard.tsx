@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,24 +9,23 @@ import {
   Users,
   FileText,
   Clock,
-  CheckCircle,
-  XCircle,
   Edit,
   Eye,
   TrendingUp
 } from 'lucide-react';
 import { Scholarship, Application } from '@/types/database.types';
 import { formatDistanceToNow } from 'date-fns';
+import { User } from '@/types/database.types';
 
 interface ProviderDashboardProps {
-  profile: any;
+  profile: User;
 }
 
 export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
-  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [scholarships] = useState<Scholarship[]>([]);
+  const [applications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     totalScholarships: 0,
     pendingApproval: 0,
     activeScholarships: 0,
@@ -34,20 +33,21 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
     pendingReview: 0,
   });
 
-  useEffect(() => {
-    fetchProviderData();
-  }, []);
-
-  const fetchProviderData = async () => {
+  const fetchProviderData = useCallback(async () => {
     try {
       // TODO: Implement API endpoints for provider data
       // For now, using mock data
+      console.log('Provider profile:', profile);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching provider data:', error);
       setLoading(false);
     }
-  };
+  }, [profile]);
+
+  useEffect(() => {
+    fetchProviderData();
+  }, [fetchProviderData]);
 
   if (loading) {
     return (

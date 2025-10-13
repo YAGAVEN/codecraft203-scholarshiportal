@@ -113,18 +113,6 @@ export default function AppliedContent() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Applied
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {applications.filter(a => a.status === 'applied').length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
               Pending
             </CardTitle>
           </CardHeader>
@@ -137,12 +125,24 @@ export default function AppliedContent() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Accepted
+              Shortlisted
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {applications.filter(a => a.status === 'shortlisted').length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Selected
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {applications.filter(a => a.status === 'accepted').length}
+              {applications.filter(a => a.status === 'selected').length}
             </div>
           </CardContent>
         </Card>
