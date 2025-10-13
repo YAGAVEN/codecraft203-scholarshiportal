@@ -7,7 +7,41 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, UserCircle, Building2, Shield } from 'lucide-react';
+
+// Demo data presets - Using real users from database
+const DEMO_DATA = {
+  student: {
+    name: 'Pritcy Student',
+    email: 'pritcy026@rmkcet.ac.in',
+    password: 'Student@123', // Update this with actual password
+    confirmPassword: 'Student@123',
+    course: 'Computer Science',
+    category: 'General',
+    economicBackground: 'Middle Income',
+    role: 'student',
+  },
+  provider: {
+    name: 'Yagaad Provider',
+    email: 'yagaad118@rmkcet.ac.in',
+    password: 'Provider@123', // Update this with actual password
+    confirmPassword: 'Provider@123',
+    course: 'N/A',
+    category: 'General',
+    economicBackground: 'N/A',
+    role: 'provider',
+  },
+  admin: {
+    name: 'Pritto Admin',
+    email: 'prittoprogrammer@gmail.com',
+    password: 'Admin@123', // Update this with actual password
+    confirmPassword: 'Admin@123',
+    course: 'N/A',
+    category: 'General',
+    economicBackground: 'N/A',
+    role: 'admin',
+  },
+};
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -29,6 +63,11 @@ export default function SignupPage() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const quickFillForm = (role: 'student' | 'provider' | 'admin') => {
+    setFormData(DEMO_DATA[role]);
+    setError(null);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -113,6 +152,48 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Quick Fill Demo Data */}
+          <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+            <p className="text-xs text-muted-foreground mb-2 text-center">
+              🎮 Quick Fill Demo Data for Testing
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => quickFillForm('student')}
+                className="gap-1"
+                disabled={loading}
+              >
+                <UserCircle className="h-3 w-3" />
+                Student
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => quickFillForm('provider')}
+                className="gap-1"
+                disabled={loading}
+              >
+                <Building2 className="h-3 w-3" />
+                Provider
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => quickFillForm('admin')}
+                className="gap-1"
+                disabled={loading}
+              >
+                <Shield className="h-3 w-3" />
+                Admin
+              </Button>
+            </div>
+          </div>
+
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
