@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { useTranslation } from 'react-i18next';
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -26,6 +27,7 @@ import { useEffect, useState } from 'react';
 import type { User as UserType } from '@/types/database.types';
 import { Bell, Check } from 'lucide-react';
 import { useRef } from 'react';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface Notification {
   id: string;
@@ -41,6 +43,7 @@ export default function Navbar() {
   const router = useRouter();
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [userProfile, setUserProfile] = useState<UserType | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -117,28 +120,28 @@ export default function Navbar() {
   const getNavItems = () => {
     if (userProfile?.role === 'provider') {
       return [
-        { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/provider/scholarships', label: 'My Scholarships', icon: FileText },
-        { href: '/provider/applications', label: 'Applications', icon: Users },
-        { href: '/profile', label: 'Profile', icon: User },
+        { href: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+        { href: '/provider/scholarships', label: t('nav.myScholarships'), icon: FileText },
+        { href: '/provider/applications', label: t('nav.applications'), icon: Users },
+        { href: '/profile', label: t('nav.profile'), icon: User },
       ];
     }
 
     if (userProfile?.role === 'admin') {
       return [
-        { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-        { href: '/admin/users', label: 'Users', icon: Users },
-        { href: '/profile', label: 'Profile', icon: User },
+        { href: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+        { href: '/admin/analytics', label: t('nav.analytics'), icon: BarChart3 },
+        { href: '/admin/users', label: t('nav.users'), icon: Users },
+        { href: '/profile', label: t('nav.profile'), icon: User },
       ];
     }
 
     // Default student navigation
     return [
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/scholarships', label: 'Scholarships', icon: BookOpen },
-      { href: '/applied', label: 'Applied', icon: CheckSquare },
-      { href: '/profile', label: 'Profile', icon: User },
+      { href: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+      { href: '/scholarships', label: t('nav.scholarships'), icon: BookOpen },
+      { href: '/applied', label: t('nav.applied'), icon: CheckSquare },
+      { href: '/profile', label: t('nav.profile'), icon: User },
     ];
   };
 
@@ -228,11 +231,11 @@ export default function Navbar() {
                         <div className="flex items-center gap-2">
                           <Bell className="h-4 w-4 text-primary" />
                           <span className="font-semibold text-base">
-                            {userProfile.role === 'provider' ? 'Application Updates' : 'Notifications'}
+                            {userProfile.role === 'provider' ? t('nav.applicationUpdates') : t('nav.notifications')}
                           </span>
                           {unreadCount > 0 && (
                             <Badge variant="destructive" className="h-5 px-1.5 text-xs">
-                              {unreadCount} new
+                              {unreadCount} {t('notifications.new')}
                             </Badge>
                           )}
                         </div>
@@ -242,7 +245,7 @@ export default function Navbar() {
                           className="h-7 text-xs"
                           onClick={() => setShowNotif(false)}
                         >
-                          Close
+                          {t('common.close')}
                         </Button>
                       </div>
                     </div>
@@ -256,14 +259,14 @@ export default function Navbar() {
                           </div>
                           <p className="text-sm font-medium text-muted-foreground">
                             {userProfile.role === 'provider' 
-                              ? 'No application updates yet'
-                              : 'No notifications yet'
+                              ? t('notifications.noApplicationUpdates')
+                              : t('notifications.noNotifications')
                             }
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {userProfile.role === 'provider'
-                              ? 'You&apos;ll be notified when students apply to your scholarships'
-                              : 'We&apos;ll notify you when something arrives'
+                              ? t('notifications.notifyApplicationMessage')
+                              : t('notifications.notifyMessage')
                             }
                           </p>
                         </div>
@@ -353,7 +356,7 @@ export default function Navbar() {
                         }}
                       >
                         <Check className="h-3 w-3 mr-1" />
-                        Mark all as read
+                        {t('common.markAllAsRead')}
                       </Button>
                     </div>
                   )}
@@ -361,6 +364,9 @@ export default function Navbar() {
               )}
               </div>
             )}
+
+            {/* Language Switcher */}
+            {mounted && <LanguageSwitcher />}
 
             {/* Theme Toggle */}
             {mounted && (
@@ -379,7 +385,7 @@ export default function Navbar() {
             )}
             
             {/* Logout Button */}
-            <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+            <Button variant="ghost" size="icon" onClick={handleLogout} title={t('nav.logout')}>
               <LogOut className="h-5 w-5" />
             </Button>
           </div>
