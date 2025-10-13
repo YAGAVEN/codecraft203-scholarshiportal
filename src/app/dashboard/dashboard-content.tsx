@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Scholarship } from '@/types/database.types';
 import { formatDistanceToNow } from 'date-fns';
+import ReadinessDonut from '@/components/ReadinessDonut';
 import { User, Notification } from '@/types/database.types';
 
 interface ReadinessScore {
@@ -129,12 +130,17 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${getScoreColor(readinessScore?.score || 0)}`}>
-              {readinessScore?.score || 0}%
+            <div className="flex items-center gap-4">
+              <div className="relative w-24 h-24">
+                <ReadinessDonut value={readinessScore?.score || 0} size={96} stroke={12} />
+              </div>
+              <div>
+                <p className={`text-lg font-semibold ${getScoreColor(readinessScore?.score || 0)}`}>
+                  {readinessScore?.status || 'Loading...'}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">Overall readiness</p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {readinessScore?.status || 'Loading...'}
-            </p>
           </CardContent>
         </Card>
 
