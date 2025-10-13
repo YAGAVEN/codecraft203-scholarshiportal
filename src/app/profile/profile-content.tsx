@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,76 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const supabase = createClient();
+
+  // --- Document upload state ---
+  const [files, setFiles] = useState<Array<{ name: string; path: string; publicUrl?: string }>>([]);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const BUCKET = 'user-docs'; // make sure this bucket exists in Supabase storage
+
+  useEffect(() => {
+    // fetch user's files on mount
+    const load = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const prefix = `${user.id}/`;
+        const { data, error } = await supabase.storage.from(BUCKET).list(prefix, { limit: 100, offset: 0, sortBy: { column: 'name', order: 'asc' } });
+        if (error) {
+          console.error('Error listing files:', error.message || error);
+          return;
+        }
+        const items = (data || []).map((d: any) => ({ name: d.name, path: `${prefix}${d.name}` }));
+        // build public URLs where possible
+        const withUrls = items.map((it: any) => {
+          const { data } = supabase.storage.from(BUCKET).getPublicUrl(it.path);
+          return { ...it, publicUrl: data?.publicUrl };
+        });
+        setFiles(withUrls);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    load();
+  }, [supabase]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) setSelectedFile(f);
+  };
+
+  const uploadDocument = async () => {
+    if (!selectedFile) return;
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const path = `${user.id}/${Date.now()}_${selectedFile.name}`;
+      const { error } = await supabase.storage.from(BUCKET).upload(path, selectedFile);
+      if (error) throw error;
+
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      setFiles((f) => [{ name: selectedFile.name, path, publicUrl: data?.publicUrl }, ...f]);
+      setSelectedFile(null);
+    } catch (err) {
+      console.error('Upload failed', err);
+      setMessage({ type: 'error', text: `Upload failed: ${(err as Error).message}` });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const deleteDocument = async (path: string) => {
+    try {
+      const { error } = await supabase.storage.from(BUCKET).remove([path]);
+      if (error) throw error;
+      setFiles((f) => f.filter((it) => it.path !== path));
+    } catch (err) {
+      console.error('Delete failed', err);
+      setMessage({ type: 'error', text: `Delete failed: ${(err as Error).message}` });
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setProfile({
@@ -241,8 +312,35 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Need to change your password or delete your account? Contact support.
+            Upload supporting documents (e.g., transcripts, certificates) used for scholarship matching. Files are stored in your Supabase storage and will not modify the database schema.
           </p>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Upload Document</label>
+            <div className="flex items-center gap-2">
+              <input type="file" onChange={handleFileChange} />
+              <Button onClick={uploadDocument} disabled={!selectedFile || uploading}>{uploading ? 'Uploading...' : 'Upload'}</Button>
+            </div>
+            {selectedFile && <div className="text-sm text-muted-foreground">Selected: {selectedFile.name}</div>}
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium mb-2">Your Documents</h4>
+            {files.length === 0 && <div className="text-sm text-muted-foreground">No documents uploaded yet.</div>}
+            <div className="space-y-2">
+              {files.map((f) => (
+                <div key={f.path} className="flex items-center justify-between gap-2 p-2 border rounded">
+                  <div className="flex items-center gap-3">
+                    <a href={f.publicUrl} target="_blank" rel="noreferrer" className="text-sm text-primary underline">{f.name}</a>
+                    <span className="text-xs text-muted-foreground">{f.path.split('/').pop()}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => deleteDocument(f.path)}>Delete</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

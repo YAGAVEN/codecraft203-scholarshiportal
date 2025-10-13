@@ -15,9 +15,13 @@ export default function ScholarshipsContent() {
   const [allScholarships, setAllScholarships] = useState<Scholarship[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCountry, setFilterCountry] = useState('all');
+  const [filterLanguage, setFilterLanguage] = useState('all');
+  const [filterDeadline, setFilterDeadline] = useState('any'); // any, week, month
+  const [onlyOpen, setOnlyOpen] = useState(false);
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [countries, setCountries] = useState<string[]>(['all']);
+  const [languages, setLanguages] = useState<string[]>(['all']);
 
   // Fetch scholarships from database
   useEffect(() => {
@@ -37,6 +41,8 @@ export default function ScholarshipsContent() {
         // Extract unique countries
         const uniqueCountries = Array.from(new Set((data || []).map((s: Scholarship) => s.country)));
         setCountries(['all', ...uniqueCountries]);
+        const uniqueLanguages = Array.from(new Set((data || []).map((s: Scholarship) => s.language || 'Unknown')));
+        setLanguages(['all', ...uniqueLanguages]);
       } catch (error) {
         console.error('Error fetching scholarships:', error);
       } finally {
@@ -63,8 +69,35 @@ export default function ScholarshipsContent() {
       filtered = filtered.filter((s: Scholarship) => s.country === filterCountry);
     }
 
+    if (filterLanguage !== 'all') {
+      filtered = filtered.filter((s: Scholarship) => (s.language || 'Unknown') === filterLanguage);
+    }
+
+    if (onlyOpen) {
+      const now = new Date();
+      filtered = filtered.filter((s: Scholarship) => new Date(s.deadline) > now);
+    }
+
+    if (filterDeadline !== 'any') {
+      const now = new Date();
+      filtered = filtered.filter((s: Scholarship) => {
+        const deadline = new Date(s.deadline);
+        if (filterDeadline === 'week') {
+          const weekFromNow = new Date(now);
+          weekFromNow.setDate(now.getDate() + 7);
+          return deadline <= weekFromNow && deadline >= now;
+        }
+        if (filterDeadline === 'month') {
+          const monthFromNow = new Date(now);
+          monthFromNow.setMonth(now.getMonth() + 1);
+          return deadline <= monthFromNow && deadline >= now;
+        }
+        return true;
+      });
+    }
+
     setScholarships(filtered);
-  }, [searchTerm, filterCountry, allScholarships]);
+  }, [searchTerm, filterCountry, filterLanguage, filterDeadline, onlyOpen, allScholarships]);
 
   const handleApply = async (scholarshipId: string) => {
     setApplyingId(scholarshipId);
@@ -112,17 +145,48 @@ export default function ScholarshipsContent() {
                 className="pl-10"
               />
             </div>
-            <select
-              value={filterCountry}
-              onChange={(e) => setFilterCountry(e.target.value)}
-              className="flex h-10 w-full md:w-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              {countries.map((country: string) => (
-                <option key={country} value={country}>
-                  {country === 'all' ? 'All Countries' : country}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2 items-center">
+              <select
+                value={filterCountry}
+                onChange={(e) => setFilterCountry(e.target.value)}
+                className="flex h-10 w-full md:w-[160px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {countries.map((country: string) => (
+                  <option key={country} value={country}>
+                    {country === 'all' ? 'All Countries' : country}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filterLanguage}
+                onChange={(e) => setFilterLanguage(e.target.value)}
+                className="flex h-10 w-full md:w-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {languages.map((lang: string) => (
+                  <option key={lang} value={lang}>
+                    {lang === 'all' ? 'All Languages' : lang}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filterDeadline}
+                onChange={(e) => setFilterDeadline(e.target.value)}
+                className="flex h-10 w-full md:w-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="any">Any Deadline</option>
+                <option value="week">Due in 7 days</option>
+                <option value="month">Due in 30 days</option>
+              </select>
+
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={onlyOpen} onChange={(e) => setOnlyOpen(e.target.checked)} />
+                <span>Open only</span>
+              </label>
+
+              <Button variant="outline" onClick={() => { setSearchTerm(''); setFilterCountry('all'); setFilterLanguage('all'); setFilterDeadline('any'); setOnlyOpen(false); }}>Clear</Button>
+            </div>
           </div>
         </CardContent>
       </Card>
