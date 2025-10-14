@@ -164,7 +164,12 @@ export default function ManageScholarshipsContent() {
                     <span>{scholarship.language}</span>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="icon" title="View Details">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      title="View Details"
+                      onClick={() => router.push(`/provider/scholarships/${scholarship.id}`)}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button 
@@ -172,6 +177,7 @@ export default function ManageScholarshipsContent() {
                       size="icon" 
                       title="Edit"
                       disabled={scholarship.status === 'approved'}
+                      onClick={() => router.push(`/provider/scholarships/${scholarship.id}/edit`)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>

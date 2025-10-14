@@ -453,10 +453,21 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="icon">
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => router.push(`/provider/scholarships/${scholarship.id}`)}
+                        title="View Details"
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="icon">
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => router.push(`/provider/scholarships/${scholarship.id}/edit`)}
+                        disabled={scholarship.status === 'approved'}
+                        title={scholarship.status === 'approved' ? 'Cannot edit approved scholarship' : 'Edit'}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                     </div>
