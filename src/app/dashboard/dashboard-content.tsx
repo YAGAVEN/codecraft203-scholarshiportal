@@ -10,8 +10,8 @@ import {
   Award, 
   Calendar,
   ExternalLink,
-  AlertCircle
 } from 'lucide-react';
+import NotificationItem from '@/components/NotificationItem';
 import { Scholarship, User } from '@/types/database.types';
 import { formatDistanceToNow } from 'date-fns';
 import ReadinessDonut from '@/components/ReadinessDonut';
@@ -196,7 +196,7 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2 text-xl">
-                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                  <TrendingUp className="h-5 w-5 text-yellow-600" />
                   Action Items
                 </CardTitle>
                 <CardDescription className="mt-1">
@@ -249,7 +249,7 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
                   <h3 className="font-semibold text-base">Missing Documents & Details</h3>
                 </div>
                 <div className="space-y-3">
-                  {readinessScore.recommendations.length === 0 ? (
+                  {(readinessScore.recommendations || []).length === 0 ? (
                     <div className="text-center py-8">
                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 mb-4">
                         <TrendingUp className="h-8 w-8 text-green-600" />
@@ -259,30 +259,14 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
                         All required documents provided.
                       </p>
                     </div>
-                  ) : (
-                    readinessScore.recommendations.map((rec: string, idx: number) => (
-                      <div 
-                        key={idx} 
-                        className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg"
-                      >
-                        <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-red-900 dark:text-red-100">
-                            {rec}
-                          </p>
-                          <p className="text-xs text-red-700 dark:text-red-300 mt-1">
-                            Complete this to increase your scholarship match rate
-                          </p>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          className="flex-shrink-0"
-                          onClick={() => router.push('/profile')}
-                        >
-                          Add
-                        </Button>
-                      </div>
+                    ) : (
+                    (readinessScore.recommendations || []).map((rec: string, idx: number) => (
+                      <NotificationItem
+                        key={idx}
+                        title={rec}
+                        description="Complete this to increase your scholarship match rate"
+                        onAction={() => router.push('/profile')}
+                      />
                     ))
                   )}
                 </div>

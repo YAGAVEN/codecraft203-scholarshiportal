@@ -33,6 +33,22 @@ export default function ManageScholarshipsContent() {
     }
   };
 
+  const handleEdit = (id: string) => {
+    router.push(`/provider/scholarships/${id}/edit`);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this scholarship? This action cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/provider/scholarships/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      // refresh list
+      fetchScholarships();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed');
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
@@ -164,7 +180,7 @@ export default function ManageScholarshipsContent() {
                     <span>{scholarship.language}</span>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="icon" title="View Details">
+                    <Button variant="outline" size="icon" title="View Details" onClick={() => router.push(`/scholarships/${scholarship.id}`)}>
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button 
@@ -172,6 +188,7 @@ export default function ManageScholarshipsContent() {
                       size="icon" 
                       title="Edit"
                       disabled={scholarship.status === 'approved'}
+                      onClick={() => handleEdit(scholarship.id)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -180,6 +197,7 @@ export default function ManageScholarshipsContent() {
                       size="icon" 
                       title="Delete"
                       disabled={scholarship.status === 'approved'}
+                      onClick={() => handleDelete(scholarship.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
