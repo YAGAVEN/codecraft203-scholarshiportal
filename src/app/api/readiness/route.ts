@@ -8,10 +8,12 @@ import { NextResponse } from 'next/server';
 import { ReadinessService } from '@/services';
 
 /**
- * GET /api/readiness
+ * GET /api/readiness?documentScore=0
  * Calculate and return the readiness score for the authenticated user
+ * Query params:
+ * - documentScore: Optional document score from client-side localStorage (0-30)
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient();
     
@@ -21,8 +23,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get document score from query params
+    const { searchParams } = new URL(request.url);
+    const documentScore = parseInt(searchParams.get('documentScore') || '0', 10);
+
     const readinessService = new ReadinessService(supabase);
-    const result = await readinessService.calculateReadinessScore(user.id);
+    const result = await readinessService.calculateReadinessScore(user.id, documentScore);
 
     return NextResponse.json(result);
   } catch (error) {

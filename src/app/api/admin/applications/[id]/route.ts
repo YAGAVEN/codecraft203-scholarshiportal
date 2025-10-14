@@ -24,7 +24,7 @@ async function verifyAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   return { user, profile };
 }
 
-// GET - Get scholarship by ID
+// GET - Get application by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -39,32 +39,45 @@ export async function GET(
 
     const { id } = await params;
 
-    const { data: scholarship, error } = await supabase
-      .from('scholarships')
+    const { data: application, error } = await supabase
+      .from('applications')
       .select(`
         *,
-        provider:users!scholarships_provider_id_fkey(
+        user:users!applications_user_id_fkey(
           id,
           name,
-          email
+          email,
+          course,
+          category,
+          economic_background
+        ),
+        scholarship:scholarships!applications_scholarship_id_fkey(
+          id,
+          title,
+          description,
+          provider:users!scholarships_provider_id_fkey(
+            id,
+            name,
+            email
+          )
         )
       `)
       .eq('id', id)
       .single();
 
     if (error) {
-      console.error('Error fetching scholarship:', error);
-      return NextResponse.json({ error: 'Scholarship not found' }, { status: 404 });
+      console.error('Error fetching application:', error);
+      return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 
-    return NextResponse.json(scholarship);
+    return NextResponse.json(application);
   } catch (error) {
-    console.error('Error fetching scholarship:', error);
+    console.error('Error fetching application:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// PATCH - Update scholarship (full update or status change)
+// PATCH - Update application
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -79,48 +92,42 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { action, ...updates } = body;
+    const updates: Record<string, unknown> = { 
+      ...body, 
+      updated_at: new Date().toISOString() 
+    };
 
-    let updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
-
-    // Handle quick actions (approve/reject)
-    if (action) {
-      if (!['approve', 'reject'].includes(action)) {
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-      }
-      updateData.status = action === 'approve' ? 'approved' : 'rejected';
-    } else {
-      // Full update - allow admin to update any field
-      updateData = { ...updates, updated_at: new Date().toISOString() };
-    }
-
-    const { data: scholarship, error } = await supabase
-      .from('scholarships')
-      .update(updateData)
+    const { data: application, error } = await supabase
+      .from('applications')
+      .update(updates)
       .eq('id', id)
       .select(`
         *,
-        provider:users!scholarships_provider_id_fkey(
+        user:users!applications_user_id_fkey(
           id,
           name,
           email
+        ),
+        scholarship:scholarships!applications_scholarship_id_fkey(
+          id,
+          title
         )
       `)
       .single();
 
     if (error) {
-      console.error('Error updating scholarship:', error);
-      return NextResponse.json({ error: 'Failed to update scholarship' }, { status: 500 });
+      console.error('Error updating application:', error);
+      return NextResponse.json({ error: 'Failed to update application' }, { status: 500 });
     }
 
-    return NextResponse.json(scholarship);
+    return NextResponse.json(application);
   } catch (error) {
-    console.error('Error in scholarship update:', error);
+    console.error('Error updating application:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// DELETE - Delete scholarship
+// DELETE - Delete application
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -136,18 +143,18 @@ export async function DELETE(
     const { id } = await params;
 
     const { error } = await supabase
-      .from('scholarships')
+      .from('applications')
       .delete()
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting scholarship:', error);
+      console.error('Error deleting application:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'Scholarship deleted successfully' });
+    return NextResponse.json({ message: 'Application deleted successfully' });
   } catch (error) {
-    console.error('Error deleting scholarship:', error);
+    console.error('Error deleting application:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
