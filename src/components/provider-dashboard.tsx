@@ -17,6 +17,19 @@ import {
 import { Scholarship, Application } from '@/types/database.types';
 import { formatDistanceToNow } from 'date-fns';
 import { User } from '@/types/database.types';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 interface ProviderDashboardProps {
   profile: User;
@@ -114,29 +127,156 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Overview with Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Scholarships Overview - Pie Chart */}
         <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Scholarships Overview
+            </CardTitle>
+            <CardDescription>Distribution of scholarship statuses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Active', value: stats.activeScholarships, color: '#22c55e' },
+                      { name: 'Pending', value: stats.pendingApproval, color: '#eab308' },
+                      { name: 'Inactive', value: stats.totalScholarships - stats.activeScholarships - stats.pendingApproval, color: '#ef4444' }
+                    ].filter(item => item.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={true}
+                    label
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    nameKey="name"
+                  >
+                    {[
+                      { name: 'Active', value: stats.activeScholarships, color: '#22c55e' },
+                      { name: 'Pending', value: stats.pendingApproval, color: '#eab308' },
+                      { name: 'Inactive', value: stats.totalScholarships - stats.activeScholarships - stats.pendingApproval, color: '#ef4444' }
+                    ].filter(item => item.value > 0).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-green-600">{stats.activeScholarships}</div>
+                <p className="text-xs text-muted-foreground">Active</p>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-yellow-600">{stats.pendingApproval}</div>
+                <p className="text-xs text-muted-foreground">Pending</p>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{stats.totalScholarships}</div>
+                <p className="text-xs text-muted-foreground">Total</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Applications Overview - Bar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Applications Overview
+            </CardTitle>
+            <CardDescription>Application status breakdown</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    {
+                      name: 'Status',
+                      Pending: stats.pendingReview,
+                      Shortlisted: applications.filter(a => a.status === 'shortlisted').length,
+                      Selected: stats.selectedApplications,
+                      Rejected: applications.filter(a => a.status === 'rejected').length,
+                    }
+                  ]}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Pending" fill="#3b82f6" />
+                  <Bar dataKey="Shortlisted" fill="#eab308" />
+                  <Bar dataKey="Selected" fill="#22c55e" />
+                  <Bar dataKey="Rejected" fill="#ef4444" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+              <div>
+                <div className="text-xl font-bold text-blue-600">{stats.pendingReview}</div>
+                <p className="text-xs text-muted-foreground">Pending</p>
+              </div>
+              <div>
+                <div className="text-xl font-bold text-yellow-600">
+                  {applications.filter(a => a.status === 'shortlisted').length}
+                </div>
+                <p className="text-xs text-muted-foreground">Shortlisted</p>
+              </div>
+              <div>
+                <div className="text-xl font-bold text-green-600">{stats.selectedApplications}</div>
+                <p className="text-xs text-muted-foreground">Selected</p>
+              </div>
+              <div>
+                <div className="text-xl font-bold text-red-600">
+                  {applications.filter(a => a.status === 'rejected').length}
+                </div>
+                <p className="text-xs text-muted-foreground">Rejected</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Key Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Scholarships
             </CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalScholarships}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.activeScholarships} active
+              {stats.activeScholarships} active scholarships
             </p>
+            <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-blue-500 transition-all" 
+                style={{ width: `${stats.totalScholarships > 0 ? (stats.activeScholarships / stats.totalScholarships) * 100 : 0}%` }}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-yellow-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Pending Approval
             </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
@@ -145,30 +285,42 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
             <p className="text-xs text-muted-foreground">
               Awaiting admin review
             </p>
+            <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-yellow-500 transition-all" 
+                style={{ width: `${stats.totalScholarships > 0 ? (stats.pendingApproval / stats.totalScholarships) * 100 : 0}%` }}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Applications
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalApplications}</div>
             <p className="text-xs text-muted-foreground">
               {stats.pendingReview} need review
             </p>
+            <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-purple-500 transition-all" 
+                style={{ width: `${stats.totalApplications > 0 ? (stats.pendingReview / stats.totalApplications) * 100 : 0}%` }}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Success Rate
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -177,8 +329,14 @@ export default function ProviderDashboard({ profile }: ProviderDashboardProps) {
                 : 0}%
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.selectedApplications} selected
+              {stats.selectedApplications} of {stats.totalApplications} selected
             </p>
+            <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-green-500 transition-all" 
+                style={{ width: `${stats.totalApplications > 0 ? (stats.selectedApplications / stats.totalApplications) * 100 : 0}%` }}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>

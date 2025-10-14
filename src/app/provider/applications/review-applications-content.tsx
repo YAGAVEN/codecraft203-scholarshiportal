@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, FileText, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react';
+import { User, FileText, CheckCircle, XCircle, Loader2, Clock, Mail, BookOpen, DollarSign, X } from 'lucide-react';
 import { Application } from '@/types/database.types';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -12,6 +12,8 @@ export default function ReviewApplicationsContent() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchApplications();
@@ -29,6 +31,67 @@ export default function ReviewApplicationsContent() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateApplicationStatus = async (applicationId: string, newStatus: 'shortlisted' | 'selected' | 'rejected') => {
+    setActionLoading(applicationId);
+    try {
+      const response = await fetch('/api/provider/applications', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          application_id: applicationId,
+          status: newStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update application');
+      }
+
+      // Update local state
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId ? { ...app, status: newStatus } : app
+        )
+      );
+
+      // Show success message
+      alert(`Application ${newStatus} successfully!`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleShortlist = (applicationId: string) => {
+    if (confirm('Are you sure you want to shortlist this application?')) {
+      updateApplicationStatus(applicationId, 'shortlisted');
+    }
+  };
+
+  const handleReject = (applicationId: string) => {
+    if (confirm('Are you sure you want to reject this application? This action cannot be undone.')) {
+      updateApplicationStatus(applicationId, 'rejected');
+    }
+  };
+
+  const handleSelect = (applicationId: string) => {
+    if (confirm('Are you sure you want to select this applicant for the scholarship?')) {
+      updateApplicationStatus(applicationId, 'selected');
+    }
+  };
+
+  const handleViewDetails = (application: Application) => {
+    setSelectedApplication(application);
+  };
+
+  const closeDetailsModal = () => {
+    setSelectedApplication(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -145,39 +208,281 @@ export default function ReviewApplicationsContent() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    <p>Applicant ID: {application.user_id}</p>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      {application.user?.name || 'Unknown'}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      {application.user?.email || 'No email'}
+                    </p>
                     {application.documents_submitted && (
-                      <p>Documents: {application.documents_submitted}</p>
+                      <p className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Documents: {application.documents_submitted}
+                      </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewDetails(application)}
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
                       View Details
                     </Button>
                     {application.status === 'pending' && (
                       <>
-                        <Button size="sm" variant="default">
-                          <CheckCircle className="h-4 w-4 mr-1" />
+                        <Button 
+                          size="sm" 
+                          variant="default"
+                          onClick={() => handleShortlist(application.id)}
+                          disabled={actionLoading === application.id}
+                        >
+                          {actionLoading === application.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                          )}
                           Shortlist
                         </Button>
-                        <Button size="sm" variant="destructive">
-                          <XCircle className="h-4 w-4 mr-1" />
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => handleReject(application.id)}
+                          disabled={actionLoading === application.id}
+                        >
+                          {actionLoading === application.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <XCircle className="h-4 w-4 mr-1" />
+                          )}
                           Reject
                         </Button>
                       </>
                     )}
                     {application.status === 'shortlisted' && (
-                      <Button size="sm" variant="default">
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Select
-                      </Button>
+                      <>
+                        <Button 
+                          size="sm" 
+                          variant="default"
+                          onClick={() => handleSelect(application.id)}
+                          disabled={actionLoading === application.id}
+                        >
+                          {actionLoading === application.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                          )}
+                          Select
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => handleReject(application.id)}
+                          disabled={actionLoading === application.id}
+                        >
+                          {actionLoading === application.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <XCircle className="h-4 w-4 mr-1" />
+                          )}
+                          Reject
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Details Modal */}
+      {selectedApplication && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-2xl mb-2">Application Details</CardTitle>
+                  <CardDescription>
+                    Review complete application information
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={closeDetailsModal}
+                  className="flex-shrink-0"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Status */}
+              <div>
+                <h3 className="font-semibold mb-2">Application Status</h3>
+                {getStatusBadge(selectedApplication.status)}
+              </div>
+
+              {/* Applicant Information */}
+              <div>
+                <h3 className="font-semibold mb-3">Applicant Information</h3>
+                <div className="space-y-2 bg-muted/50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Name:</span>
+                    <span>{selectedApplication.user?.name || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Email:</span>
+                    <span>{selectedApplication.user?.email || 'N/A'}</span>
+                  </div>
+                  {selectedApplication.user?.course && (
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Course:</span>
+                      <span>{selectedApplication.user.course}</span>
+                    </div>
+                  )}
+                  {selectedApplication.user?.category && (
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Category:</span>
+                      <Badge variant="outline">{selectedApplication.user.category}</Badge>
+                    </div>
+                  )}
+                  {selectedApplication.user?.economic_background && (
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Economic Background:</span>
+                      <span>{selectedApplication.user.economic_background}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Scholarship Information */}
+              <div>
+                <h3 className="font-semibold mb-3">Scholarship Information</h3>
+                <div className="space-y-2 bg-muted/50 p-4 rounded-lg">
+                  <div>
+                    <span className="font-medium">Title:</span>
+                    <p className="mt-1">{selectedApplication.scholarship?.title || 'N/A'}</p>
+                  </div>
+                  {selectedApplication.scholarship?.description && (
+                    <div>
+                      <span className="font-medium">Description:</span>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {selectedApplication.scholarship.description}
+                      </p>
+                    </div>
+                  )}
+                  {selectedApplication.scholarship?.deadline && (
+                    <div>
+                      <span className="font-medium">Deadline:</span>
+                      <p className="mt-1">
+                        {new Date(selectedApplication.scholarship.deadline).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Documents */}
+              {selectedApplication.documents_submitted && (
+                <div>
+                  <h3 className="font-semibold mb-2">Documents Submitted</h3>
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <p className="text-sm">{selectedApplication.documents_submitted}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Application Date */}
+              <div>
+                <h3 className="font-semibold mb-2">Application Date</h3>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(selectedApplication.applied_at).toLocaleString()} 
+                  <span className="ml-2">
+                    ({formatDistanceToNow(new Date(selectedApplication.applied_at), { addSuffix: true })})
+                  </span>
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-4 border-t">
+                {selectedApplication.status === 'pending' && (
+                  <>
+                    <Button 
+                      className="flex-1"
+                      onClick={() => {
+                        handleShortlist(selectedApplication.id);
+                        closeDetailsModal();
+                      }}
+                      disabled={actionLoading === selectedApplication.id}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Shortlist
+                    </Button>
+                    <Button 
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => {
+                        handleReject(selectedApplication.id);
+                        closeDetailsModal();
+                      }}
+                      disabled={actionLoading === selectedApplication.id}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                  </>
+                )}
+                {selectedApplication.status === 'shortlisted' && (
+                  <>
+                    <Button 
+                      className="flex-1"
+                      onClick={() => {
+                        handleSelect(selectedApplication.id);
+                        closeDetailsModal();
+                      }}
+                      disabled={actionLoading === selectedApplication.id}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Select
+                    </Button>
+                    <Button 
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => {
+                        handleReject(selectedApplication.id);
+                        closeDetailsModal();
+                      }}
+                      disabled={actionLoading === selectedApplication.id}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                  </>
+                )}
+                {(selectedApplication.status === 'selected' || selectedApplication.status === 'rejected') && (
+                  <Button 
+                    variant="outline"
+                    className="flex-1"
+                    onClick={closeDetailsModal}
+                  >
+                    Close
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

@@ -24,7 +24,7 @@ async function verifyAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   return { user, profile };
 }
 
-// GET - Fetch scholarships with filters
+// GET - Fetch all applications with filters
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -36,53 +36,59 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const providerId = searchParams.get('providerId');
-    const search = searchParams.get('search');
+    const userId = searchParams.get('userId');
+    const scholarshipId = searchParams.get('scholarshipId');
 
     let query = supabase
-      .from('scholarships')
+      .from('applications')
       .select(`
         *,
-        provider:users!scholarships_provider_id_fkey(
+        user:users!applications_user_id_fkey(
           id,
           name,
-          email
+          email,
+          course
+        ),
+        scholarship:scholarships!applications_scholarship_id_fkey(
+          id,
+          title,
+          provider_id,
+          provider:users!scholarships_provider_id_fkey(
+            id,
+            name,
+            email
+          )
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('applied_at', { ascending: false });
 
-    // Default to pending if no status specified
-    if (status) {
-      if (['pending', 'approved', 'rejected', 'withdrawn'].includes(status)) {
-        query = query.eq('status', status);
-      }
-    } else {
-      query = query.eq('status', 'pending');
+    if (status && ['pending', 'shortlisted', 'selected', 'rejected'].includes(status)) {
+      query = query.eq('status', status);
     }
 
-    if (providerId) {
-      query = query.eq('provider_id', providerId);
+    if (userId) {
+      query = query.eq('user_id', userId);
     }
 
-    if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+    if (scholarshipId) {
+      query = query.eq('scholarship_id', scholarshipId);
     }
 
-    const { data: scholarships, error } = await query;
+    const { data: applications, error } = await query;
 
     if (error) {
-      console.error('Error fetching scholarships:', error);
-      return NextResponse.json({ error: 'Failed to fetch scholarships' }, { status: 500 });
+      console.error('Error fetching applications:', error);
+      return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 500 });
     }
 
-    return NextResponse.json(scholarships || []);
+    return NextResponse.json(applications || []);
   } catch (error) {
-    console.error('Error fetching admin scholarships:', error);
+    console.error('Error fetching applications:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST - Create a new scholarship (admin can create on behalf of provider)
+// POST - Create application (admin can create on behalf of user)
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -93,66 +99,52 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      provider_id,
-      title,
-      description,
-      eligibility_criteria,
-      benefits,
-      required_documents,
-      deadline,
-      country,
-      language,
-      link,
-      status = 'approved', // Admin-created scholarships are auto-approved
-    } = body;
+    const { user_id, scholarship_id, documents_submitted, notes, status = 'pending' } = body;
 
-    // Validate required fields
-    if (!title || !description || !eligibility_criteria || !deadline || !country || !language || !link) {
+    if (!user_id || !scholarship_id) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: user_id, scholarship_id' },
         { status: 400 }
       );
     }
 
-    const { data: scholarship, error } = await supabase
-      .from('scholarships')
+    const { data: application, error } = await supabase
+      .from('applications')
       .insert({
-        provider_id,
-        title,
-        description,
-        eligibility_criteria,
-        benefits,
-        required_documents,
-        deadline,
-        country,
-        language,
-        link,
+        user_id,
+        scholarship_id,
+        documents_submitted,
+        notes,
         status,
       })
       .select(`
         *,
-        provider:users!scholarships_provider_id_fkey(
+        user:users!applications_user_id_fkey(
           id,
           name,
-          email
+          email,
+          course
+        ),
+        scholarship:scholarships!applications_scholarship_id_fkey(
+          id,
+          title
         )
       `)
       .single();
 
     if (error) {
-      console.error('Error creating scholarship:', error);
+      console.error('Error creating application:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(scholarship, { status: 201 });
+    return NextResponse.json(application, { status: 201 });
   } catch (error) {
-    console.error('Error creating scholarship:', error);
+    console.error('Error creating application:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// DELETE - Delete scholarship
+// DELETE - Delete application
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -166,23 +158,22 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Scholarship ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Application ID is required' }, { status: 400 });
     }
 
-    // Delete scholarship (will cascade delete applications)
     const { error } = await supabase
-      .from('scholarships')
+      .from('applications')
       .delete()
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting scholarship:', error);
+      console.error('Error deleting application:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'Scholarship deleted successfully' });
+    return NextResponse.json({ message: 'Application deleted successfully' });
   } catch (error) {
-    console.error('Error deleting scholarship:', error);
+    console.error('Error deleting application:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

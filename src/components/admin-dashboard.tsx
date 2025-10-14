@@ -12,10 +12,16 @@ import {
   AlertCircle,
   TrendingUp,
   BarChart3,
-  Bell
+  Bell,
+  X,
+  Calendar,
+  Globe,
+  Languages,
+  Link as LinkIcon,
+  FileCheck
 } from 'lucide-react';
 import { User, Scholarship } from '@/types/database.types';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 
 interface AdminDashboardProps {
   profile: User;
@@ -33,6 +39,7 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
   const [pendingScholarships, setPendingScholarships] = useState<ScholarshipWithProvider[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedScholarship, setSelectedScholarship] = useState<ScholarshipWithProvider | null>(null);
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalStudents: 0,
@@ -307,7 +314,11 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
                       <XCircle className="h-4 w-4" />
                       Reject
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setSelectedScholarship(scholarship)}
+                    >
                       View Details
                     </Button>
                   </div>
@@ -418,6 +429,180 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Details Modal */}
+      {selectedScholarship && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-background rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold">Scholarship Details</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedScholarship(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Title and Status */}
+              <div>
+                <h3 className="text-2xl font-bold mb-2">{selectedScholarship.title}</h3>
+                <Badge variant="secondary" className="mb-4">
+                  Pending Review
+                </Badge>
+              </div>
+
+              {/* Provider Information */}
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Provider Information
+                </h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Name:</span>
+                    <p className="font-medium">{selectedScholarship.provider?.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Email:</span>
+                    <p className="font-medium">{selectedScholarship.provider?.email || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h4 className="font-semibold mb-2">Description</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {selectedScholarship.description}
+                </p>
+              </div>
+
+              {/* Eligibility Criteria */}
+              <div>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <FileCheck className="h-4 w-4" />
+                  Eligibility Criteria
+                </h4>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {selectedScholarship.eligibility_criteria}
+                </p>
+              </div>
+
+              {/* Benefits */}
+              {selectedScholarship.benefits && (
+                <div>
+                  <h4 className="font-semibold mb-2">Benefits</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {selectedScholarship.benefits}
+                  </p>
+                </div>
+              )}
+
+              {/* Required Documents */}
+              {selectedScholarship.required_documents && (
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Required Documents
+                  </h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {selectedScholarship.required_documents}
+                  </p>
+                </div>
+              )}
+
+              {/* Key Information Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-sm">Deadline</span>
+                  </div>
+                  <p className="font-semibold">
+                    {format(new Date(selectedScholarship.deadline), 'PPP')}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ({formatDistanceToNow(new Date(selectedScholarship.deadline), { addSuffix: true })})
+                  </p>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Globe className="h-4 w-4" />
+                    <span className="text-sm">Country</span>
+                  </div>
+                  <p className="font-semibold">{selectedScholarship.country}</p>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Languages className="h-4 w-4" />
+                    <span className="text-sm">Language</span>
+                  </div>
+                  <p className="font-semibold">{selectedScholarship.language}</p>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-sm">Submitted</span>
+                  </div>
+                  <p className="font-semibold text-sm">
+                    {selectedScholarship.created_at 
+                      ? formatDistanceToNow(new Date(selectedScholarship.created_at), { addSuffix: true })
+                      : 'Recently'
+                    }
+                  </p>
+                </div>
+              </div>
+
+              {/* Application Link */}
+              <div>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <LinkIcon className="h-4 w-4" />
+                  Application Link
+                </h4>
+                <a
+                  href={selectedScholarship.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline break-all"
+                >
+                  {selectedScholarship.link}
+                </a>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  className="flex-1 gap-2"
+                  onClick={() => {
+                    handleApproveScholarship(selectedScholarship.id);
+                    setSelectedScholarship(null);
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Approve Scholarship
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1 gap-2"
+                  onClick={() => {
+                    handleRejectScholarship(selectedScholarship.id);
+                    setSelectedScholarship(null);
+                  }}
+                >
+                  <XCircle className="h-4 w-4" />
+                  Reject Scholarship
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
