@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,15 +35,15 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
   const [loading, setLoading] = useState(true);
   const [applyingId, setApplyingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
+      // Get document score from localStorage using utility
+      const documentScore = profile?.id ? 
+        (await import('@/lib/documentUtils')).calculateDocumentScore(profile.id) : 0;
+
       const [matchRes, readinessRes] = await Promise.all([
         fetch('/api/match'),
-        fetch('/api/readiness'),
+        fetch(`/api/readiness?documentScore=${documentScore}`),
       ]);
 
       const matchData = await matchRes.json();
@@ -56,7 +56,11 @@ export default function DashboardContent({ profile }: DashboardContentProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.id]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const handleApply = async (scholarshipId: string) => {
     setApplyingId(scholarshipId);

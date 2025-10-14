@@ -19,8 +19,9 @@ export class ReadinessService {
 
   /**
    * Calculate readiness score for a user
+   * @param documentScore - Optional document score from client-side localStorage (0-30)
    */
-  async calculateReadinessScore(userId: string): Promise<ReadinessScoreResponseDTO> {
+  async calculateReadinessScore(userId: string, documentScore: number = 0): Promise<ReadinessScoreResponseDTO> {
     const user = await this.userRepo.findById(userId);
     if (!user) {
       throw new Error('User not found');
@@ -49,14 +50,14 @@ export class ReadinessService {
     totalScore += applicationScore;
 
     // Factor 3: Documents Uploaded (30 points)
-    // TODO: Implement when document upload feature is added
-    const documentScore = 0;
+    // Document score is passed from client-side localStorage
+    const docScore = Math.min(30, Math.max(0, documentScore)); // Ensure between 0-30
     factors.push({
       name: 'Documents Uploaded',
-      score: documentScore,
+      score: docScore,
       maxScore: 30,
     });
-    totalScore += documentScore;
+    totalScore += docScore;
 
     // Calculate percentage
     const readinessPercentage = Math.round((totalScore / 100) * 100);
@@ -68,7 +69,7 @@ export class ReadinessService {
     const recommendations = this.generateRecommendations(
       profileScore,
       applicationCount,
-      documentScore
+      docScore
     );
 
     return {

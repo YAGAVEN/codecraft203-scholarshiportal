@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { User as UserType } from '@/types/database.types';
 import { createClient } from '@/lib/supabase/client';
 import { Save, User, Building2, Shield } from 'lucide-react';
+import DocumentUploader from '@/components/DocumentUploader';
 
 interface ProfileContentProps {
   initialProfile: UserType | null;
@@ -303,6 +304,16 @@ export default function ProfileContent({ initialProfile }: ProfileContentProps) 
           </form>
         </CardContent>
       </Card>
+
+      {/* Document Upload Section - Only for Students */}
+      {profile.role === 'student' && initialProfile?.id && (
+        <DocumentUploader 
+          userId={initialProfile.id}
+          onDocumentsChange={(docs) => {
+            console.log('Documents updated:', docs.length);
+          }}
+        />
+      )}
 
       {/* Additional Settings Card */}
       <Card>
